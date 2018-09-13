@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ game['name'] }} - Combat</title>
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/combat_page_style.css') }}">
+
+    <script>
+        $(document).ready(function() {
+            // Initialize a socket connection.
+            var socket = io.connect('http://' + document.domain + ':' + location.port + '/combat_page_namespace');
+
+            // Initialize useful variables from the template engine.
+            var users_player = {{ users_player|tojson }};
+            var currently_playing_character = {{ currently_playing_character|tojson }};
+            var character_initiated_position = {{ character_initiated_position|tojson }};
+            var currently_playing_is = {{ currently_playing_is|tojson }};
+            var user_is_dm = {{ user_is_dm|tojson }};
+            var characters = {{ characters|tojson }};
+            var abilities = {{ my_character_abilities|tojson }};
+            var spells = {{ my_character_spells|tojson }};
+
+            // Create a grid over the map.
+            $(".image-holder").each(function() {
+                var currentId = 0; // Initialize the
+                var grid_size = 8; // The map will be an 8x8 grid.
+
+                $linkheight = ($(this).innerHeight() / grid_size);// Set the height for each grid field.
+                $linkwidth = ($(this).innerWidth() / grid_size); // Set the width for each grid field
+
+                // Create the grid, by appending div elements.
+                for(var i = 0; i < grid_size * grid_size; i++) {
+                        currentId = 'square_' + i;
+                        $(this).append('<div class="grid-div" id="' + currentId + '" style="height:' + $linkheight + 'px;width:' + $linkwidth +'px;"></div>')
+                }
+
+                // Append a radio button in each grid field, and a label for that button.
+                $("[id^='square_']").each(function() {
+                    var radio_id = $(this).prop("id") + '_radiobutton';
+                    var id = $(this).prop("id").replace("square_", "");
+
+                    $(this).append('<input type="radio" id="'+radio_id+'" name="position_radio" />');
+                    $(this).append('<label class="radio-label" for="'+radio_id+'">'+id+'</label>');
+                });
+
+                // Handle map state
+                if(user_is_dm === false) {
+                    // If the player has not yet chosen a starting position or it is his turn the map will be enabled.
+                    if((character_initiated_position === false) || (currently_playing_character === users_player)) {
+                        $(this).removeClass("disabledbutton");
+                    }
+                }
+                else {
+                    // If a monster is playing in this turn.
+                    if(currently_playing_is === 'monster') {
+                        $(this).removeClass("disabledbutton");
+                    }
+                }
+
+                // Display loaded monsters on map.
+                for(var i = 0; i < characters.length; i++) {
+                    if(characters[i]['type'] === 'monster') {
+                        $("#square_" + characters[i]['position'] + " > .radio-label").text(characters[i]['combat_identifier']);
+                    }
+                }
+
+                // Display loaded characters on map.
+                for(var i = 0; i < characters.length; i++) {
+                    if(characters[i]['type'] === 'player_character') {
+                        if(characters[i]['position']) {
+                            $("#square_" + characters[i]['position'] + " > .radio-label").text(characters[i]['combat_identifier']);
+                        }
+                    }
+                }
+            });
+
+            // Action type selected changed.
+            $(document).on("change", "select[name='action_type_select']", function() {
+                var selected_action_type = $(this).children(":selected").attr("value");
+
+                // Hide all the other options
+                $(this).find('option').not(':selected').each( function(k,v) {
+                    $("select[name='" + v.value +"_select']").prop("hidden", true);
+                });
+
+                // Display actions according to action type selected.
+                $("select[name='" + selected_action_type + "_select']").prop("hidden", false);
+                $("select[name='" + selected_action_type + "_select']").trigger("change");
+            });
+
+            // Action selected changed.
+            $(document).on("change", "select[name='action_select'], select[name='bonus_action_select']", function() {
+                var select_to_enable = $(this).children(":selected").attr("value");
+
+                if(select_to_enable === 'attack' || select_to_enable === 'two_weapon_fighting') {
+                    if (!(user_is_dm)) {
+                        load_monster_targets();
+                    }
+                    $("select[name='spell_select']").prop("hidden", true);
+                    $("select[name='use_ability_select']").prop("hidden", true);
+                    $("select[name='subability_select']").prop("hidden", true);
+                    $("select[name='weapon_select']").prop("hidden", false);
+                    $("select[name='targets_select']").prop("hidden", false);
+                    $("input[name='attack_roll_button']").prop("hidden", false);
+                    $("input[name='attack_damage_button']").prop("hidden", false);
+                }
+                else if(select_to_enable === 'spell_cast' || select_to_enable === 'bonus_action_spell_cast') {
+                    $("select[name='weapon_select']").prop("hidden", true);
+                    $("select[name='use_ability_select']").prop("hidden", true);
+                    $("select[name='subability_select']").prop("hidden", true);
+                    $("select[name='spell_select']").trigger("change");
+                    $("select[name='spell_select']").prop("hidden", false);
+                    $("select[name='targets_select']").prop("hidden", false);
+                    $(":input[name='attack_roll_button']").prop("hidden", true);
+                    $(":input[name='attack_damage_button']").prop("hidden", true);
+                }
+                else if(select_to_enable === 'death_saving_throw' ||  select_to_enable === 'doff_shield' || select_to_enable === 'don_shield') {
+                    $("select[name='weapon_select']").prop("hidden", true);
+                    $("select[name='spell_select']").prop("hidden", true);
+                    $("select[name='subability_select']").prop("hidden", true);
+                    $("select[name='targets_select']").prop("hidden", true);
+                    $("select[name='use_ability_select']").prop("hidden", true);
+                }
+                else if(select_to_enable === 'use_ability') {
+                    load_monster_targets();
+                    $("select[name='weapon_select']").prop("hidden", true);
+                    $("select[name='spell_select']").prop("hidden", true);
+                    $("select[name='use_ability_select']").prop("hidden", false);
+                    $("select[name='use_ability_select']").trigger("change");
+                    $("select[name='subability_select']").trigger("change");
+                }
+
+                $(":input[name='action_go_button']").prop("hidden", false);
+            });
+
+            function load_monster_targets(){
+                $("select[name='targets_select']").empty();
+
+                for(var i = 0; i < characters.length; i++) {
+                    if(characters[i]['type'] === 'monster') {
+                        if (!($("#yourSelect option[value='" + characters[i]['combat_identifier'] + "']").length > 0)) {
+                            var option = "<option value='" + characters[i]['combat_identifier'] + "'>" + characters[i]['combat_identifier'] + "</option>";
+                            $("select[name='targets_select']").append(option);
+                        }
+                    }
+                }
+            };
+
+            // Spell selected on change.
+            $(document).on("change", "select[name='spell_select']", function() {
+                $.each(spells, function(k, spell) {
+                    var selected_spell = $("select[name='spell_select']").children(":selected").attr("value");
+
+                    if (spell['name'] === selected_spell) {
+                        var targets_select = $("select[name='targets_select']");
+
+                        $(targets_select).prop("hidden", false);
+
+                        if (spell['type'] === 'damage') {
+                            load_monster_targets();
+                        }
+                        else if (spell['type'] === 'healing' || spell['type'] === 'buff') {
+                            $(targets_select).empty();
+
+                            for(var i = 0; i < characters.length; i++) {
+                                if(characters[i]['type'] === 'player_character') {
+                                    option = "<option value='" + characters[i]['combat_identifier'] + "'>" + characters[i]['combat_identifier'] + "</option>";
+                                    $(targets_select).append(option);
+                                }
+                            }
+                        }
+                        else if (spell['type'] === 'creation' || spell['type'] === 'utility') {
+                            $(targets_select).prop("hidden", true);
+                        }
+                    }
+                    else {
+                    }
+                });
+            });
+
+            // Ability selected on change.
+            $(document).on("change", "select[name='use_ability_select']", function() {
+                $.each(abilities, function(k, ability) {
+                    if (ability['name'] === $("select[name='use_ability_select']").val()) {
+                        // Check if the ability is casted on one target, many targets or on-self.
+                        if (ability['target'] === 'self_cast') {
+                            $("select[name='targets_select']").prop("hidden", true);
+                        }
+                        else {
+                            $("select[name='targets_select']").prop("hidden", false);
+                        }
+
+                        // Check if there are sub-abilities to choose along with the ability.
+                        if ('sub_abilities' in ability) {
+                            $("select[name='subability_select']").empty();
+                            $.each(ability['sub_abilities'], function(k, subability) {
+                                $("select[name='subability_select']").append("<option value='" + subability +"'>" + subability + "</option>");
+                            });
+                            $("select[name='subability_select']").prop("hidden", false);
+                        }
+                        else {
+                            $("select[name='subability_select']").prop("hidden", true);
+                        }
+                    }
+                });
+            });
+
+            // Sub-ability on change.
+            $(document).on("change", "select[name='subability_select']", function() {
+                $.each(abilities, function(k, ability) {
+                    if (ability['type'] === 'sub_ability') {
+                        if (ability['name'] === $("select[name='subability_select']").val()) {
+                            if (ability['target'] === 'self_cast') {
+                                $("select[name='targets_select']").prop("hidden", true);
+                            }
+                            else {
+                                if (ability['category'] === 'healing') {
+                                    $("select[name='targets_select']").empty();
+                                    
+                                    for(var i = 0; i < characters.length; i++) {
+                                        if(characters[i]['type'] === 'player_character') {
+                                            option = "<option value='" + characters[i]['combat_identifier'] + "'>" + characters[i]['combat_identifier'] + "</option>";
+                                            $("select[name='targets_select']").append(option);
+                                        }
+                                    }
+                                }
+
+                                $("select[name='targets_select']").prop("hidden", false);
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Map clicked.
+            $("input[id^='square_']").click(function() {
+                var character_position_info = {};
+
+                // Emit to server the position of the character.
+                character_position_info['character_identifier'] = users_player;
+                character_position_info['character_position'] = parseInt($(this).attr('id').replace('square_', ''));
+
+                if (user_is_dm) {
+                    character_position_info['character_identifier'] = currently_playing_character;
+                }
+                socket.emit("character_position", character_position_info);
+            });
+
+            // Load monster button clicked.
+            $("#monster_load_button").click(function () {
+                var monster_to_load = {};
+                monster_to_load['name'] = $("#monsters_list").val();
+                monster_to_load['position'] = parseInt($("#monster_position").val());
+                socket.emit("monster_loaded", monster_to_load);
+            });
+
+            // Initiative button clicked.
+            $("#initiate_initiative_rolls").click(function () {
+                $(this).prop('disabled', true);
+
+                socket.emit("initiate_initiative_rolls");
+            });
+
+            // Act! button clicked.
+            $(document).on("click", ":input[name='action_go_button']", function() {
+                var action_info = {};
+                var weapon = null;
+                var character_selections = $(this).parent();
+
+                action_info['actor'] = currently_playing_character;
+                action_info['action_type'] = $(character_selections).children("select[name='action_type_select']").children(":selected").attr("value");
+
+                if (action_info['action_type'] === 'action') {
+                    action_info['action'] = $(character_selections).children("select[name='action_select']").children(":selected").attr("value");
+                }
+                else if (action_info['action_type'] === 'bonus_action') {
+                    action_info['action'] = $(character_selections).children("select[name='bonus_action_select']").children(":selected").attr("value");
+                }
+
+                if(action_info['action'] === 'attack' || action_info['action'] === 'two_weapon_fighting') {
+                    weapon = $(character_selections).children("select[name='weapon_select']").children(":selected").attr("value").split("_");
+                    if(weapon.length > 1) {
+                        if (weapon[1] === 'thrown' || weapon[1] === 'melee' || weapon[1] === 'versatile') {
+                            action_info['weapon'] = weapon[0];
+                            action_info['weapon_property'] = weapon[1];
+                        }
+                        else {
+                            action_info['weapon'] = weapon[0] + '_' + weapon[1];
+                        }
+                    }
+                    else {
+                        action_info['weapon'] = weapon[0];
+                    }
+                    action_info['targets'] = $(character_selections).children("select[name='targets_select']").children(":selected").map(function(){ return this.value }).get();
+                }
+                else if (action_info['action'] === 'spell_cast' || action_info['action'] === 'bonus_action_spell_cast') {
+                    action_info['spell'] = $(character_selections).children("select[name='spell_select']").children(":selected").attr("value");
+                    action_info['targets'] = $(character_selections).children("select[name='targets_select']").children(":selected").map(function(){ return this.value }).get();
+                }
+                else if (action_info['action'] === 'use_ability') {
+                    action_info['ability'] = $(character_selections).children("select[name='use_ability_select']").children(":selected").attr("value");
+
+                    $.each(abilities, function(k, ability) {
+                        if (ability['name'] === action_info['ability']) {
+                            // Check if the ability is casted on one target, many targets or on-self.
+        
+                            // Check if there are sub-abilities to choose along with the ability.
+                            if ('sub_abilities' in ability) {
+                                action_info['sub_ability'] = $(character_selections).children("select[name='subability_select']").children(":selected").attr("value");
+                                
+                                $.each(abilities, function(k, subability) {
+                                    if (subability['type'] === 'sub_ability') {
+                                        if (subability['name'] === $("select[name='subability_select']").val()) {
+                                            if (subability['target'] === 'multi') {
+                                                action_info['targets'] =  $(character_selections).children("select[name='targets_select']").children(":selected").map(function(){ return this.value }).get();
+                                            }
+
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+
+                socket.emit("action", action_info);
+            });
+
+            // End turn button clicked.
+            $(document).on("click", ":input[name='end_turn_button']", function() {
+                // Disable the button.
+                $(this).prop('disabled', true);
+                $(".actions-div").children().prop('disabled', true);
+
+                // Disable the map.
+                $(".image-holder").addClass("disabledbutton");
+
+                // Emit to the server so the next player can play.
+                socket.emit("next_turn", {'datum': 'NOT YET'});
+            });
+
+            // Dynamically display both loaded and moving monsters on the map.
+            socket.on('display_loaded_monster', function(loaded_monster) {
+                var previous_position = parseInt(loaded_monster['old_position']);
+                var monster_identifier = loaded_monster["combat_identifier"];
+
+                characters.push(loaded_monster);
+
+                // If player is not already shown in the 'monsters_list' append a new entry.
+                if($("#loaded_monsters > div.character-div:contains("+monster_identifier +")").length === 0) {
+                    var monster = $('<div></div>').attr("class", "character-div").attr("id", monster_identifier + "_div");
+
+                    monster.append("<div class='monster-info'></div>");
+                    monster.children(".monster-info").append(loaded_monster["combat_identifier"]);
+
+                    // Append elements for the DM only.
+                    if (user_is_dm === true) {
+                        var updated_hit_points = loaded_monster["current_hit_points"].toString() + "/" + loaded_monster["maximum_hit_points"].toString();
+                        monster.children(".monster-info").append(" , Hit Points: <span id='my_character_hit_points'>" + updated_hit_points + "</span>");
+
+                        monster.append('<div class="actions-div"></div');
+
+                        // Append the the action type select. 
+                        monster.children('div.actions-div').append('<select name="action_type_select" class="custom-select" disabled style="margin-left:5px;margin-right:5px;"> ');
+                        monster.children('div.actions-div').children('select[name="action_type_select"]').append('<option value="action">Action</option>');
+
+                        // Append the action select.
+                        monster.children('.actions-div').append('<select name="action_select" class="custom-select" disabled style="margin-right:5px;"> ');
+                        monster.children('div.actions-div').children('select[name="action_select"]').append('<option value="attack">Attack</option>');
+
+                        // Append the weapon select.
+                        monster.children('.actions-div').append('<select name="weapon_select" class="custom-select" disabled style="margin-right:5px;"> ');
+                        for(var i = 0; i < loaded_monster['weapons'].length; i++) {
+                            optionsAsString = "<option value='" + loaded_monster['weapons'][i] + "'>" + loaded_monster['weapons'][i] + "</option>";
+                            monster.children('div.actions-div').children('select[name="weapon_select"]').append(optionsAsString);
+                        }
+
+                        // Append the target select.
+                        monster.children('.actions-div').append('<select name="targets_select" class="custom-select" disabled style="margin-right:5px;"> ');
+                        for(var i = 0; i < characters.length; i++) {
+                            if (characters[i]['type'] === 'player_character') {
+                                optionsAsString = "<option value='" + characters[i]['combat_identifier'] + "'>" + characters[i]['combat_identifier'] + "</option>";
+                                monster.children('div.actions-div').children('select[name="targets_select"]').append(optionsAsString);
+                            }
+                        }
+
+                        // Append the 'Act!' button to character div.
+                        monster.children('.actions-div').append('<input class="btn" type="button" name="action_go_button" value="Act!" disabled > ');
+
+                        // Append the 'End Turn' button to the monster div.
+                        monster.children('.actions-div').append('<input type="button" class="btn" name="end_turn_button" value="End Turn" disabled > ');
+                    }
+                    else {
+                        var option = "<option value='" + monster_identifier + "'>" + monster_identifier + "</option>";
+                        $("select[name='targets_select']").append(option);
+
+                        monster.children(".monster-info").append('<span class="monster_status">(' + loaded_monster["displayed_hp_status"] + ')</span>');
+                    }
+
+                    $("#loaded_monsters").append(monster);
+                }
+
+                // Restore previous monster position to empty location.
+                $(".radio-label[for='square_" + previous_position + "_radiobutton']").text(previous_position);
+
+                // Display monster on map.
+                $("#square_" + loaded_monster['position'] + "> .radio-label").text(monster_identifier);
+            });
+
+            // Dynamically display both loaded and moving characters on the map.
+            socket.on('display_loaded_player_character', function (loaded_character) {
+                var character_previous_position = parseInt(loaded_character['old_position']);
+
+                // Disable the map if player has no previous position, thus choosing starting position.
+                if(isNaN(character_previous_position)) {
+                    $(".image-holder").addClass("disabledbutton");
+                }
+                if(character_previous_position !== null) {
+                    $(".radio-label[for='square_" + character_previous_position + "_radiobutton']").text(character_previous_position);
+                }
+
+                // Display character on map.
+                $('#square_' + loaded_character['position'] + "> .radio-label").text(loaded_character['combat_identifier']);
+            });
+
+            // Begin the turns and rounds.
+            // Merge with 'changing_turn'.
+            socket.on('display_initiative_order', function (data) {
+                currently_playing_is = data['currently_playing_is'];
+                currently_playing_character = data['currently_playing_character'];
+
+                var image_holder = $(".image-holder");
+                var initiative_order = $("#initiative_order");
+                var actions_div = $("#" + data['currently_playing_character'] + "_div > .actions-div");
+
+                $(initiative_order).empty();
+                for (var i=0; i< data['initiative_order'].length; i++) {
+                    character_name = data['initiative_order'][i];
+                    
+                    $(initiative_order).append(character_name + " > ");
+                }
+
+                $("#round").text(data['round']);
+                $("#currently_playing").text(currently_playing_character);
+
+                if(data['currently_playing_is'] === 'monster') {
+                    if (user_is_dm === true) {
+                        $(image_holder).removeClass("disabledbutton");
+                        $(actions_div).children().prop('disabled', false);
+                    }
+                }
+                else if (data['currently_playing_character'] === users_player) {
+                    $(image_holder).removeClass("disabledbutton");
+                    $(actions_div).children().prop('disabled', false);
+                }
+            });
+
+            // Changing turn message received from server.
+            // Merge with 'display_initiative_order'.
+            socket.on('changing_turn', function(data) {
+                current_time = data['time'];
+                current_round = data['round'];
+                currently_playing_is = data['currently_playing_is'];
+                currently_playing_character = data['currently_playing_character'];
+
+                if (user_is_dm === true) {
+                    if(data['currently_playing_is'] === 'monster') {
+                        $(".image-holder").removeClass("disabledbutton");
+                        $("#" + data['currently_playing_character'] + "_div > .actions-div").children().prop('disabled', false);
+                    }
+                }
+
+                if (data['currently_playing_character'] === users_player) {
+                    $(".image-holder").removeClass("disabledbutton");
+                    $("#" + data['currently_playing_character'] + "_div > .actions-div").children().prop('disabled', false);
+                }
+
+                $("#currently_playing").text(currently_playing_character);
+                $("#time").text(current_time);
+                $("#round").text(current_round);
+            });
+
+            // Log messages coming from the server.
+            socket.on('message', function(msg) {
+                var update_initiative_order = false;
+
+                // Print the original message of the action.
+                var chat_entry = $('<div></div>').attr("class", "chat-message");
+                var chat_log = chat_entry.append('<p></p>').text(msg['msg']);
+                $('.chatlogs').append(chat_log);
+
+                if(msg['type'] === 'exit_combat') {
+                    // Handle exit combat redirection.
+                    log = "Dungeon Master has terminated this combat. You are being redirected to the game page";
+                    window.location.replace("{{ url_for('session_page', game_id_url=game_id_url) }}");
+                }
+                else if (msg["type"] === "apply_damage") {
+                    // Handle apply damage.
+
+                    // Print how much damage the target took.
+                    var damaged_identifier = msg['damaged_character']['combat_identifier'];
+                    var print_msg = damaged_identifier + " received " + msg['damage_amount'] + " points of damage.";
+                    var chat_entry = $('<div></div>').attr("class", "chat-message");
+                    var chat_log = chat_entry.append('<p></p>').text(print_msg);
+                    $('.chatlogs').append(chat_log);
+
+                    // Handle dynamic DOM changes.
+                    if (msg["damaged_character"]["type"] === "monster") {
+                        if (user_is_dm) {
+                            // If it is monster update hit points for the DM.
+                            var updated_hit_points = msg['damaged_character']['current_hit_points'].toString() + "/" + msg['damaged_character']['maximum_hit_points'].toString();
+                            $("#" + damaged_identifier + "_div > .monster-info").children("#my_character_hit_points").text(updated_hit_points);
+
+                            // If current hit points are below zero remove actions-div and display message.
+                            if (msg['damaged_character']['current_hit_points'] <= 0 ) {
+                                $("#" + damaged_identifier + "_div").children(".actions-div").prop("hidden", true);
+                                $("#" + damaged_identifier + "_div").append("<p>Unfortunately this character is dead and no longer participates in this combat.</p>");
+                            }
+                        }
+                        else {
+                            // For damaged monsters players get updated hit points status.
+                            var updated_displayed_hp_status = "(" + msg["damaged_character"]["displayed_hp_status"] + ")";
+                            $("#" + damaged_identifier + "_div > .monster-info").children(".monster_status").text(updated_displayed_hp_status);
+
+                            // If the monster is dead, remove it from the targets list.
+                            if (msg['damaged_character']['current_hit_points'] <= 0 ) {
+                                $("select[name='targets_select'] option[value='" + damaged_identifier + "']").prop("hidden", true);
+                            }
+                        }
+                    }
+                    else if (msg["damaged_character"]["type"] === "player_character") {
+                        // If damaged character is player's character.
+
+                        // Update the hit points for both DM and all the other players.
+                        var updated_hit_points = msg['damaged_character']['current_hit_points'].toString() + "/" + msg['damaged_character']['maximum_hit_points'].toString();
+                        $("#" + damaged_identifier + "_div > .character-info").children("#my_character_hit_points").text(updated_hit_points);
+
+                        // If the character belongs to user.
+                        if (msg["damaged_character"]["combat_identifier"] === users_player) {
+                            // If character received too much damage and died instantly.
+                            if (msg['damaged_character']['current_hit_points'] <= -msg['damaged_character']['maximum_hit_points'] ) {
+                                $("#" + damaged_identifier + "_div").children(".actions-div").prop("hidden", true);
+                                $("#" + damaged_identifier + "_div").append("<p>Unfortunately this character is dead and no longer participates in this combat.</p>");
+                            }
+                            else if (msg['damaged_character']['current_hit_points'] <= 0) {
+                                // Else display only "Death Saving Throw" functionality.
+                                $("select[name='action_type_select']").empty().append("<option value='action'>Action</option>");
+                                $("select[name='action_select']").empty().append("<option value='death_saving_throw'>Death Saving Throw</option>");
+
+                                $("select[name='weapon_select']").prop("hidden", true);
+                                $("select[name='spell_select']").prop("hidden", true);
+                                $("select[name='targets_select']").prop("hidden", true);
+                                $("select[name='use_ability_select']").prop("hidden", true);
+                            }
+                        }
+                    }
+                }
+                else if (msg['type'] === 'healing') {
+                    for (var i=0; i < msg['healed_characters'].length; i++) {
+
+                        // Print how much hit points were restored to the target.
+                        var healed_identifier = msg['healed_characters'][i]['combat_identifier'];
+                        var print_msg = msg['healed_characters'][i]['heal_amount'] + " hit points was restored to " + healed_identifier;
+                        var chat_entry = $('<div></div>').attr("class", "chat-message");
+                        var chat_log = chat_entry.append('<p></p>').text(print_msg);
+                        $('.chatlogs').append(chat_log);
+
+                        // Update hit points display for the healed character.
+                        var updated_hit_points = msg['healed_characters'][i]['current_hit_points'].toString() + "/" + msg['healed_characters'][i]['maximum_hit_points'].toString();
+                        $("#" + healed_identifier + "_div > .character-info").children("#my_character_hit_points").text(updated_hit_points);
+                    }
+                }
+
+                // Handle Death Saving Throws exit types.
+                if(currently_playing_character === users_player) {
+                    if (msg['type'] === 'dead_by_attempts') {
+                        $("#" + currently_playing_character + "_div").children(".actions-div").prop("hidden", true);
+                        $("#" + currently_playing_character + "_div").append("<p>Unfortunately this character is dead and no longer participates in this combat.</p>");
+                        $("#" + currently_playing_character + "_div").children(".actions-div").children(":input[name='end_turn_button']").trigger("click");
+                    }
+                    else if (msg['type'] === 'alive_by_attempts') {
+                        $("#" + currently_playing_character + "_div").children(".actions-div").prop("hidden", true);
+                        $("#" + currently_playing_character + "_div").append("<p>Your character is stable, but you are still unconscious so you cannot do anything.</p>");
+                        $("#" + currently_playing_character + "_div").children(".actions-div").children(":input[name='end_turn_button']").trigger("click");
+                    }
+                }
+            });
+
+            $("select[name='action_type_select']").trigger("change");
+            $("select[name='action_select']").trigger("change");
+    });
+    </script>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <h1>Combat Session</h1>
+
+        <div class="row">
+            <div class="col-sm-8">
+                <div class="image-holder disabledbutton" id="img-1"></div>                    
+            </div>
+            <div class="col-sm-4">
+                <h2>Combat action logs</h2>
+                <div class="chatlogs"></div>
+            </div>
+        </div>
+
+        <!-- Turns & rounds info -->
+        <div class="row border-me">
+            <div class="col-sm-3">
+                <div class="initiative_order_div">
+                    <p>Initiative Order:
+                        <span id="initiative_order">
+                            {% if initiative_order %}
+                                {% for character in initiative_order %}
+                                    {{ character }} >
+                                {% endfor %}
+                            {% endif %}
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-sm-3">
+                <div class="turn">
+                    <p>Currently playing: <span id="currently_playing">{{ currently_playing_character }}</span></p>
+                </div>
+            </div>
+            
+            <div class="col-sm-3">
+                <div class="round">
+                    <p>Round: <span id="round">{{ round }}</span></p>
+                </div>
+            </div>
+
+            <div class="col-sm-3">
+                <div class="time">
+                    <p>Seconds ellapsed: <span id="time">{{ time }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            {% if user_is_dm %}
+                <div class="col-sm-4">
+            {% else %}
+                <div class="col-sm-8">
+            {% endif %}
+                <h2>Party</h2>
+                <div class="characters_list">
+                    {% for character in characters %}
+                    {% if character['type'] == 'player_character' %}
+                        <div class="character-div" id="{{ character['combat_identifier'] + '_div' }}">
+                            <div class="character-info">
+                                {{ character['combat_identifier'] }},
+                                Hit Points: <span id="my_character_hit_points">{{ character['current_hit_points'] }}/{{ character['maximum_hit_points'] }}</span>
+                            </div>
+
+                            {% if users_player == character['combat_identifier'] %}
+                                {% if currently_playing_character == character['combat_identifier'] %}
+                                    {% set disabled = '' %}
+                                {% else %}
+                                    {% set disabled = 'disabled' %}
+                                {% endif %}
+
+                                <div class="actions-div">
+                                    <!-- Action type selector -->
+                                    {% if character['health_status'] == 'alive' or character['health_status'] == 'unconscious' %}
+                                        <select name="action_type_select" class="custom-select" {{ disabled }}>
+                                                <option value="action">Action</option>
+                                                {% if character['health_status'] != 'unconscious' %}
+                                                <option value="bonus_action">Bonus Action</option>
+                                                {% endif %}
+                                        </select>
+                                    {% endif %}
+
+                                    <!-- Bonus action selector -->
+                                    <select name="bonus_action_select" hidden="true" class="custom-select" {{ disabled }}>
+                                        <option value="two_weapon_fighting">Two Weapon Fighting</option>
+                                        {% if 'prepared_spells' in character %}
+                                        <option value="bonus_action_spell_cast">Spell cast</option>
+                                        {% endif %}
+                                    </select>
+
+                                    <!-- Action selector -->
+                                    {% if character['health_status'] == 'alive' or character['health_status'] == 'unconscious' %}
+                                        <select name="action_select" hidden="true" class="custom-select" {{ disabled }}>
+                                            {% if character['health_status'] == 'alive' %}
+                                                <option value="attack">Attack</option>
+                                                {% if 'prepared_spells' in character %}
+                                                <option value="spell_cast">Cast a spell</option>
+                                                {% endif %}
+                                                {% if my_character_abilities %}
+                                                    <option value="use_ability">Use ability</option>
+                                                {% endif %}
+                                            {% elif character['health_status'] == 'unconscious' %}
+                                                <option value="death_saving_throw">Death Saving Throw</option>
+                                            {% endif %}
+                                            {% if 'shield' in character['equipped'] %}
+                                                <option value="doff_shield">Doff shield</option>
+                                            {% elif ('shield' in character['armor']) and ('shield' not in character['equipped']) %}
+                                                <option value="don_shield">Don shield</option>
+                                            {% endif%}
+                                        </select>
+                                    {% endif %}
+
+                                    <!-- Class ability selector -->
+                                    <select name="use_ability_select" hidden="true" class="custom-select" {{ disabled }}>
+                                        {% for ability in my_character_abilities %}
+                                            {% if ability['type'] == 'ability' %}
+                                                <option value="{{ ability['name'] }}">{{ ability['name'] }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+
+                                    <!-- Weapon Selector -->
+                                    <select name="weapon_select" hidden="true" class="custom-select" {{ disabled }}>
+                                        {% for weapon in character['equipped'] %}
+                                            {% for weapon_info in weapons %}
+                                                {% if weapon_info['name'] == weapon %}
+                                                    {% if 'thrown' in weapon_info['properties'] %}
+                                                        <option value="{{ weapon_info['name'] }}_melee">{{ weapon_info['name']|capitalize }} (Melee)</option>
+                                                        <option value="{{ weapon_info['name'] }}_thrown">{{ weapon_info['name']|capitalize }} (Thrown)</option>
+                                                    {% elif 'versatile' in weapon_info['properties'] %}
+                                                        <option value="{{ weapon_info['name']}}">{{ weapon_info['name']|capitalize }} (One handed)</option>
+                                                        {% if character['equipped']|length == 1 %}
+                                                            <option value="{{ weapon_info['name']}}_versatile">{{ weapon_info['name']|capitalize }} (Two handed)</option>
+                                                        {% endif%}
+                                                    {% else %}
+                                                        <option value="{{ weapon_info['name']}}">{{ weapon_info['name']|capitalize }}</option>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </select>
+                                    
+                                    <!-- Spell Selector -->
+                                    <select name="spell_select" hidden="true" class="custom-select" {{ disabled }}>
+                                        {% for spell in character['prepared_spells'] %}
+                                            <option value="{{ spell }}">{{ spell|replace('_', ' ')|capitalize }}</option>
+                                        {% endfor %}
+                                        {% for cantrip in character['cantrips'] %}
+                                            <option value="{{ cantrip }}">{{ cantrip|replace('_', ' ')|capitalize }}</option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <!-- Subspell Selector -->
+                                    <select name="subspell_select" hidden="true" class="custom-select" {{ disabled }}>
+                                    </select>
+
+                                    <!-- Subability Selector -->
+                                    <select name="subability_select" hidden="true" class="custom-select" {{ disabled }}>
+                                    </select>
+
+                                    <!-- Targets Selector -->
+                                    <select multiple name="targets_select" hidden="true" class="custom-select" {{ disabled }}>
+                                        {% for character in characters %}
+                                        {% if character['type']== 'monster' %}
+                                            <option value="{{ character['combat_identifier'] }}">{{ character['combat_identifier'] }}</option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+
+                                    <!-- Go! -->
+                                    <input class="btn" type="button" name="action_go_button" value="Act!" hidden="true" {{ disabled }}>
+
+                                    {% if character['health_status'] == 'alive' or character['health_status'] == 'unconscious' %}
+                                        <input class="btn" type="button" name="end_turn_button" value="End Turn" {{ disabled }}>
+                                    {% elif character['health_status'] == 'dead' %}
+                                        <p>Unfortunately your character is dead and no longer participates in this combat.</p>
+                                    {% elif character['health_status'] == 'stable' %}
+                                        <p>Your character is stable, but you are still unconscious so you cannot do anything.</p>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if user_is_dm %}
+                <div class="col-sm-8">
+            {% else %}
+                <div class="col-sm-4">
+            {% endif %}
+                <h2>Monsters</h2>
+                <div id="loaded_monsters">
+                    {% for character in characters %}
+                        {% if character['type'] == 'monster' %}
+                            <div class="character-div" id="{{ character['combat_identifier'] + '_div' }}">
+                                <div class="monster-info">
+                                    {{ character['combat_identifier'] }}
+                                    {% if user_is_dm %}
+                                        , Hit Points: <span id="my_character_hit_points">{{ character['current_hit_points'] }}/{{ character['maximum_hit_points'] }}</span>
+                                    {% else %}
+                                        <span class="monster_status">({{ character['displayed_hp_status'] }})</span> 
+                                    {% endif %}
+                                </div>
+
+                                {% if user_is_dm %}
+                                    {% if currently_playing_character == character['combat_identifier'] %}
+                                        {% set disabled = '' %}
+                                    {% else %}
+                                        {% set disabled = 'disabled' %}
+                                    {% endif %}
+
+                                    <div class="actions-div">
+                                        {% if character['health_status'] == 'alive' %}
+                                            <!-- Action type selector -->
+                                            <select name="action_type_select" class="custom-select" {{ disabled }}>
+                                                    <option value="action">Action</option>
+                                            </select>
+
+                                            <!-- Action selector -->
+                                            <select name="action_select" class="custom-select" {{ disabled }}>
+                                                <option value="attack">Attack</option>
+                                            </select>
+
+                                            <!-- Weapon selector -->
+                                            <select name="weapon_select" class="custom-select" {{ disabled }}>
+                                                {% for weapon in character['weapons'] %}
+                                                    <option value="{{ weapon }}">{{ weapon|replace('_', ' ')|capitalize }}</option>
+                                                {% endfor %}
+                                            </select>
+
+                                            <!-- Target Selector -->
+                                            <select name="targets_select" class="custom-select" {{ disabled }}>
+                                                {% for character in characters %}
+                                                    {% if character['type'] == 'player_character' %}
+                                                        <option value="{{ character['combat_identifier'] }}">{{ character['combat_identifier'] }}</option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+
+                                            <!-- Go! -->
+                                            <input class="btn" type="button" name="action_go_button" value="Act!" {{ disabled }}>
+                                        
+                                            <!-- End Turn button -->
+                                            <input class="btn" type="button" name="end_turn_button" value="End Turn" {{ disabled }}>
+                                        {% else %}
+                                            <p>Unfortunately this character is dead and no longer participates in this combat.</p>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor%}
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            {% if user_is_dm %}
+                <div class="col-sm-12">
+                    <div class="monster-loading-div">
+                        <label for="monsters_list">Monsters List</label>
+                        <select id="monsters_list" class="custom-select">
+                            <option value="bandit">Bandit</option>
+                            <option value="ghoul">Ghoul</option>
+                            <option value="goblin">Goblin</option>
+                            <option value="orc">Orc</option>
+                            <option value="troll">Troll</option>
+                        </select>
+
+                        <label for="monsters_list">Monsters Position</label>
+                        <select id="monster_position" class="custom-select">
+                            {% for i in range(0, 64) %}
+                            <option>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                        <input class="btn" type="button" id="monster_load_button" value="Load Monster">
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="row last-row">
+            {% if user_is_dm %}
+                <div class="col-sm-12">
+                    {% if round == 0 %}
+                        {% set init_call_disabled = '' %}
+                    {% else %}
+                        {% set init_call_disabled = 'disabled' %}
+                    {% endif %}
+                    <input class="btn" type="button" id="initiate_initiative_rolls" value="Call for initiative" {{ init_call_disabled }}>
+                    <a id="exit-combat-btn" class="btn" href="{{ url_for('exit_combat', game_id_url=game_id_url) }}">Exit Combat</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <footer>
+            <div class="footer">
+                Dungeons & Dragons, D&D, their respective logos,
+                and all Wizards titles and characters are property
+                of Wizards of the Coast LLC in the U.S.A. and other countries.
+                &copy;2017 Wizards.
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

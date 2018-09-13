@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{game_id['name']}}</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/gamePage_style.css') }}">
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-12">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <ul class=flashes>
+                            {% for category, message in messages %}
+                                <li class="{{ category }}">{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% endwith %}
+
+                <div id="welcome-message">
+                    Welcome to {{ game_id['name'] }}
+                </div>
+
+                <div id="game-info">
+                <p id="dm-info">DUNGEON MASTER: {{ dm_username['username'] }}</p>
+                <p id="players-info">PLAYERS:</p>
+                    {% for player in players %}
+                        <div class="player-info">
+                        <p><span class="par_title">Player:</span> {{ player['username'] }}</p>
+                        {% if player['character'] %}
+                            <p><span class="par_title">Character:</span> {{ player['character']['name'] }} ( {{ player['character']['level'] }} level {{ player['character']['race']|capitalize }} {{ player['character']['class']|capitalize }})</p>
+                        {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div id="links">
+                    {% if game_id['status'] == "online" %}
+                        {% if (players_character and (players_character['health_status'] != 'dead')) or (dm_username['username'] == current_user.id) %}
+                            <a class="btn" href="{{ url_for('session_page', game_id_url=game_id['_id']) }}">Join session</a>
+                        {% endif%}
+                    {% endif %}
+
+                    {% if dm_username['username'] == current_user.id %}
+                        {% if game_id['status'] == "offline" %}
+                            <br><a class="btn" href="{{ url_for('session_page', game_id_url=game_id['_id']) }}">Start session</a>
+                        {% endif %}
+                        <br><a class="btn" href="{{ url_for('npc_creation', game_id_url=game_id['_id']) }}">Create NPCs</a>
+                    {% elif players_character and (players_character['health_status'] != 'dead') %}
+                        {% if players_character['level_up_ready'] %}
+                        <br><a class="btn" href="{{ url_for('level_up', game_id_url=game_id['_id']) }}">Level up!</a>
+                        {% endif %}
+                        {% if 'spell_slots' in players_character %}
+                        <br><a class="btn" href="{{ url_for('prepared_spells', game_id_url=game_id['_id']) }}">Set prepared spells list</a>
+                        {% endif %}
+                        <br><a class="btn" href="{{ url_for('prepared_weapons', game_id_url=game_id['_id']) }}">Set prepared weapons</a>
+                    {% else %}
+                        <br><a class="btn" href="{{ url_for('character_creation_page', game_id_url=game_id['_id']) }}">Create a character</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+
+        <footer>
+                <div class="footer">
+                    Dungeons & Dragons, D&D, their respective logos,
+                    and all Wizards titles and characters are property
+                    of Wizards of the Coast LLC in the U.S.A. and other countries.
+                    &copy;2017 Wizards.
+                </div>
+        </footer>
+    </div>
+
+</body>
+</html>

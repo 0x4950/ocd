@@ -1,0 +1,146 @@
+html,body {
+    margin:0;
+    padding:0;
+    height:100%;
+    font-weight: bold;
+    color: #DCDCCD;
+    background-color: #DA3535;
+}
+
+.container-fluid {
+    min-height:100%;
+    position:relative;
+}
+
+.row {
+    margin-bottom: 10px;
+}
+
+.last-row {
+    padding-bottom: 30px;
+    margin-bottom: 0px;
+}
+
+h1 {
+    text-decoration: underline;
+}
+
+.chatlogs {
+    width: 100%;
+    height: 450px;
+    overflow: auto;
+    border-style: solid;
+    border-color: #DCDCCD;
+    border-width: 2px;
+    font-weight: normal;
+}
+
+.border-me {
+    border-style: solid;
+    border-color: #DCDCCD;
+    border-width: 2px;
+    border-radius: 7px;
+    margin: 2px;
+}
+
+.game_info {
+    float: left;
+    margin-right: 20px;
+    margin-left: 20px;
+}
+
+.character-div {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 3px;
+    border-color: #DCDCCD;
+}
+
+select[name='targets_select'] {
+    height: auto;
+}
+
+.actions-div {
+    display: inline-block;
+}
+
+.image-holder {
+    background-image: url('../images/vintage_map.jpg');
+    width: 800px;
+    height: 500px;
+    background-size: 100% 100%;
+}
+
+.grid-div {
+    color: #DA3535;
+    float: left;
+    border-right: 1px dashed #000;
+    border-bottom: 1px dashed #000;
+    border-color: #DA3535;
+}
+
+.grid-div input[type=radio] {
+    display: none;
+}
+
+.grid-div .radio-label{
+    background-color: transparent;
+    display:inline-block;
+    width:99px;
+    height:61.5px;
+}
+
+.grid-link {
+    float: left;
+    background: transparent;
+    border: none;
+    border-right: 1.5px solid #000;
+    border-bottom: 1.5px solid #000;
+}
+
+.disabledbutton {
+    pointer-events: none;
+}
+
+#initiate_initiative_rolls {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.btn {
+    color: #DA3535;
+    background-color: #DCDCCD;
+}
+
+.monster-loading-div {
+    float: right;
+}
+
+#loaded_monsters {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-top:    2px solid #DCDCCD;
+    border-bottom: 2px solid #DCDCCD;
+    max-height: 295px;
+    overflow: auto;
+}
+
+#exit-combat-btn {
+    float: right;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    font-weight: normal;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    text-align: center;
+    color: #DCDCDC;
+}

@@ -1,0 +1,72 @@
+html,body {
+    margin:0;
+    padding:0;
+    height:100%;
+    color: #DCDCCD;
+    font-weight: bold;
+    background-color: #DA3535;
+}
+
+.container-fluid {
+    min-height:100%;
+    position:relative;
+}
+
+.character_creation_form {
+    padding-bottom: 30px;
+}
+
+.ability_scores-div {
+    padding-right: 6px;
+    max-width: 300px;
+}
+
+.ability_scores-div input {
+    float: right;
+}
+
+.col-sm-6 p {
+    text-decoration: underline;
+}
+
+.intro-div {
+    display: inline-block;
+}
+
+.leftovers-div {
+    display: inline-block;
+}
+
+.skills {
+    float: left;
+    width: 49%;
+}
+
+.row {
+    margin-bottom: 10px;
+}
+
+.skills-div {
+    display: block;
+}
+
+input {
+    display: inline-block;
+}
+
+.btn {
+    color: #DA3535;
+    background-color: #DCDCCD;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    font-weight: normal;
+    text-align: center;
+    color: #DCDCDC;
+}

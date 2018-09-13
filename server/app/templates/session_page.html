@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ game['name'] }} - Session</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/session_page_style.css') }}">
+
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port + '/session_page_namespace');
+        var player_check_info;
+        var users_player = "{{ users_player|safe }}";
+
+        $(document).ready(function(){
+            {% if dm_username %}
+                var fr = new FileReader();
+                var npcs_loaded = [];
+
+                function selected_characters() {
+                    var characters_checked = [];
+
+                    $("input[type=checkbox]:checked").each(function( index ) {
+                        characters_checked.push($(this).val().replace('_cb', ''));
+                    });
+
+                    return characters_checked;
+                }
+
+                $("#file-input").change(function(e) {
+                    fr.addEventListener("loadend", function() {
+                        socket.emit("my event", fr.result);
+                    });
+
+                    fr.readAsDataURL(e.target.files[0]);
+                });
+
+                $("#add_note_button").click(function () {
+                    var note = $("#input_note").val();
+                    $("#input_note").val("");
+                    if(note) {
+                        $("#dm_notes").append("<li class='item'>" + note + "</li>");
+                    }
+                });
+
+                $("#time_flower").change(function () {
+                    current_time = $(this).val();
+                    socket.emit("time_changer", current_time);
+                });
+
+                $("#rest_button").click(function () {
+                    characters_selected = selected_characters();
+                    socket.emit('server_rest', characters_selected);
+                });
+
+                $("#exp_points_button").click(function () {
+                    var exp_points = parseInt($("#exp_points").val());
+                    characters_selected = selected_characters();
+
+                    socket.emit('server_exp_points', characters_selected, exp_points);
+                });
+
+                $("#npc_load_button").click(function() {
+                    var npc_to_load = $("#npc_select").val();
+                    {% for npc in npcs %}
+                        var npc_name = "{{ npc['npc_name']|safe }}";
+                        if (npc_name == npc_to_load) {
+                            if(!(npcs_loaded.includes(npc_name))) {
+                                var npc_description = "{{ npc['npc_description']|safe }}";
+                                var list = $('<li></li>').attr("value", npc_name).text(npc_name + ": " + npc_description);
+                                $("#npcs_list").append(list);
+
+                                var list_item_checkbox = $('<input type="checkbox">').attr("value", npc_name + '_cb');
+                                $("[value='{{ npc['npc_name'] }}']").append(list_item_checkbox);
+                                npcs_loaded.push(npc_name);
+                                console.log(npcs_loaded);
+                            }
+                        }
+                    {% endfor %}
+                });
+
+                $("#ability_check_button").click(function() {
+                    var dm_check_info = {};
+                    var checked = [];
+                    rdy = false;
+
+                    check_type = $("#ability_check_type").val();
+
+                    dm_check_info['type'] = check_type;
+                    dm_check_info['characters'] = [];
+
+                    $("input[type=checkbox]:checked").each(function( index ) {
+                        checked.push($(this).val().replace('_cb', ''));
+                    });
+
+                    if(check_type == 'ability_check') {
+                        for(var i = 0; i < checked.length; i++) {
+                            obj = {'name': checked[i], 'skill': $("#ability_skill").val().toLowerCase().replace(/\s+/g, '_')};
+                            dm_check_info['characters'].push(obj);
+                        }
+
+                        dm_check_info['difficulty_class'] = parseInt($("#difficulty_class").val()) * 5;
+                        rdy = true;
+                    }
+                    else if(check_type == 'contest') {
+                        if(checked.length == 2) {
+                            obj1 = {'name': checked[0], 'skill': $("#ability_skill_1").val().toLowerCase()};
+                            obj2 = {'name': checked[1], 'skill': $("#ability_skill_2").val().toLowerCase()};
+                            dm_check_info['characters'].push(obj1);
+                            dm_check_info['characters'].push(obj2);
+                            rdy=true;
+                        }
+                        else {
+                            alert("Two characters must participate in this action.");
+                        }
+                    }
+                    if(rdy) {
+                        socket.emit("ability_check_initiated", dm_check_info);
+                    }
+                });
+
+                $("#ability_check_type").change(function () {
+                    var acd = document.getElementById('ability_check_div');
+                    var cd = document.getElementById('contest_div');
+
+                    if ($(this).val() == 'ability_check') {
+                        cd.style.display = 'none';
+                        acd.style.display = 'block';
+                    }
+                    else if ($(this).val() == 'contest') {
+                        acd.style.display = 'none';
+                        cd.style.display = 'block';
+                    }
+                });
+
+                $("#start_combat").click(function () {
+                    var characters_selected = selected_characters();
+                    console.log(characters_selected)
+                    socket.emit("load_combat_characters", characters_selected);
+                    window.location.replace("{{ url_for('combat_page', game_id_url=game['_id']) }}");
+                });
+
+                $("#ability_check_type").trigger("change");
+                $("#time_flower").trigger("change");
+            {% endif %}
+
+            // Player d20 button when clicked
+            $(document).on('click', ':input[name$="_d20"]', function(){
+                character_name = $(this).attr('name').replace('_d20', '');
+                socket.emit('ability_check_dice_roll', character_name, player_check_info);
+                $(this).prop('disabled', true);
+            });
+
+            socket.on("dis", function(info) {
+                console.log(info);
+                var ctx = document.getElementById('my_canvas').getContext('2d');
+                var img = new Image();
+                img.onload = function() {
+                    ctx.clearRect(0, 0, 500, 500);
+                    ctx.drawImage(img, 0, 0);
+                }
+                img.src = info;
+            });
+
+            socket.on('enable_rolls', function(check_info) {
+                player_check_info = check_info;
+
+                // Check if character was selected
+                for(var i=0; i < player_check_info['characters'].length; i++){
+                    if(player_check_info['characters'][i]['name'] == users_player) {
+                        $(":input[name$='_d20']").prop('disabled', false);
+                    }
+                }
+            });
+
+            socket.on('update_time', function(client_current_time) {
+                $('#time_paragraph').text(client_current_time);
+            });
+ 
+            socket.on('message', function(msg) {
+                var log = null;
+                console.log(msg);
+                
+                if (msg['type'] === 'exit_session') {
+                    log = "Dungeon Master has terminated this session. You are being redirected to the game page";
+                    window.location.replace("{{ url_for('game_page', game_id_url=game['_id']) }}");
+                }
+                else if (msg['type'] === 'enter_combat') {
+                    for(var i=0; i<msg['combat_characters'].length; i++) {
+                        if(msg['combat_characters'][i] === users_player) {
+                            window.location.replace("{{ url_for('combat_page', game_id_url=game['_id']) }}");
+                        }
+                    }
+                    log = "Dungeon Master initiated a Combat with the following characters participating " + msg['combat_characters'];
+                }
+                else if (msg['type'] === 'ability_check') {
+                    var status = null;
+                    var article = 'a';
+
+                    if (msg['status'] == 1) {
+                        status = 'successfully';
+                    }
+                    else if (msg['status'] == 2) {
+                        status = 'unsuccessfully';
+                    }
+                    
+                    if (msg['skill'][0] == 'a') {
+                        article += 'n';
+                    }
+
+                    log = msg['character_name'] + ' has ' + status + ' rolled ' + msg['result'] + ' for ' + article  + ' ' + msg['skill'] + ' ' + msg['type'].replace('_', ' ') + '.';
+                }
+                else if(msg['type'] === 'contest') {
+                    log = msg['character'] + ' has rolled ' + msg['result'] + ' in ' + msg['skill'] + ' check ' + ' to a contest with ' + msg['opponent'];
+                }
+                else if(msg['type'] === 'rest') {
+                    var article = null;
+
+                    if (msg['rested_characters'].length > 1) {
+                        article = " are ";
+                    }
+                    else if (msg['rested_characters'].length === 1) {
+                        article = " is ";
+                    }
+                    
+                    if (article) {
+                        log = msg['rested_characters'] + article + "now rested";
+                    }
+                }
+                else if (msg['type'] === 'exp') {
+                    var article = null;
+                    
+                    if (msg['awarded_characters'].length > 1) {
+                        article = " are ";
+                    }
+                    else if (msg['awarded_characters'].length === 1) {
+                        article = " is ";
+                    }
+                    
+                    if (article) {
+                        log = msg['awarded_characters'] + article + " awarded with " + msg['amount'] + " experience points";
+                    }
+                }
+
+                var chat_entry = $('<div></div>').attr("class", "chat-message");
+                var chat_log = chat_entry.append('<p></p>').text(log);
+                $('.chatlogs').append(chat_log);
+            });
+
+            socket.on('joined_player', function(data) {
+                $(".characters_list").empty();
+                for(var i=0; i < data['characters'].length; i++) {
+                    var char = data['characters'][i];
+                    if(!($(".characters_list:contains('" + char + "')").length > 0)) {
+                        var node = document.createElement("p");
+                        var textnode = document.createTextNode(data['characters'][i]);
+                        {% if dm_username %}
+                            $('<input />', { type:'checkbox', value:data['characters'][i] + '_cb'}).appendTo(node);
+                        {% endif %}
+                        if(char == users_player){
+                            $('<input />', { type:'button', name:char + '_d20', value:'d20', disabled:'disabled'}).appendTo(node);
+                        }
+                        node.appendChild(textnode);
+                        $(".characters_list").append(node);
+                    }
+                }
+            });
+        });
+    </script>
+</head>
+
+<body>
+    {% set abilities_n_skills = ("Strength", "Athletics", "Dexterity", "Acrobatics", "Sleight of Hand", "Stealth",
+        "Intelligence", "Arcana", "History", "History stonework", "Investigation", "Nature", "Religion", "Wisdom",
+        "Animal Handling", "Insight", "Medicine", "Perception", "Survival","Charisma",
+        "Deception", "Intimidation", "Performance", "Persuasion") %}
+    {% set main_abilities = ("Strength", "Dexterity", "Intelligence", "Wisdom", "Charisma") %}
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-12">
+                <h1>Welcome to a {{ game['name'] }} session</h1>
+                <h3>Time</h3><p id='time_paragraph'>{{ game['time'] }}</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-6">
+                <h2>Party</h2>
+                <div class="characters_list border">
+                    {% for character in characters %}
+                        {% if dm_username %}
+                            <input type="checkbox" value="{{ character + '_cb'}}">
+                        {% endif %}
+
+                        {% if users_player == character %}
+                            <input class="btn" type="button" name="{{ character + '_d20'}}" value="d20" disabled>
+                        {% endif %}
+                        {{ character }}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-sm-6">
+                <!-- Canvas used for images uploaded by DM
+                <canvas id="my_canvas" width=500 height=500></canvas><br> -->
+
+                <!-- Logs -->
+                <h2>Session action logs</h2>
+                <div class="chatlogs border"></div>
+            </div>
+        </div>
+
+        {% if dm_username %}
+            <div class="row">
+                <div class="col-sm-4">
+                    <!-- Image upload button
+                    <input type="file" id="file-input" accept="image/*"><br> -->
+
+                    <!-- Dungeon master's notes -->
+                    Notes<input type="text" id="input_note" class="form-control"><input class="btn" id="add_note_button" type="button" value="Add">
+                    <div class="border">
+                    <ul id="dm_notes"></ul>
+                    </div>
+                </div>
+
+                <div class="col-sm-4">
+                    <!-- NPC select & loading -->
+                    NPCs                
+                    <select id="npc_select" class="custom-select">
+                    {% for npc in npcs %}
+                        <option value="{{ npc['npc_name'] }}" >{{ npc['npc_name'] }}</option>
+                    {% endfor %}
+                    </select>
+                    <input class="btn" id="npc_load_button" type="button" value="Load">
+                    <div class="border">
+                        <ul id="npcs_list"></ul>
+                    </div>
+                </div>
+
+                <div class="col-sm-4">
+                    Common Functions
+                    <div class="border comfun">
+                        <!-- Time -->
+                        <div class="dm-func">
+                            Set time
+                            <select id="time_flower" class="custom-select">
+                                {% for time in ("Midnight", "Midday", "Morning", "Afternoon", "Evening", "Dawn", "Dusk") %}
+                                    <option value="{{ time }}">{{ time }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Experience Giver -->
+                        <div class="dm-func">
+                            Award XP
+                            <input class="form-control" type="number" id="exp_points" value="0">
+                            <input class="btn" type="button" id="exp_points_button" value="Award">
+                        </div>
+
+                        <!-- Rest -->
+                        <div class="dm-func">
+                            Rest a character
+                            <input class="btn" type="button" id="rest_button" value="Rest">
+                        </div>
+
+                        <!-- Ability checks -->
+                        <!-- Ability Check Type (Ability Check, Contest, Passive Check, Group Check)-->
+                        Call for
+                        <select id="ability_check_type" class="custom-select">
+                            <option value="ability_check">Ability Check</option>
+                            <option value="contest">Contest</option>
+                        </select>
+                        <div id="ability_check_div" style="display: none;">
+                            <!-- Difficulty class(DC) -->
+                            <div class="blocker">
+                                DC
+                                <select id="difficulty_class" class="custom-select">
+                                    {% for dc in ("Very easy", "Easy", "Medium", "Hard", "Very hard", "Nearly impossible") %}
+                                        <option value={{loop.index}}>{{ dc }}</option>
+                                    {% endfor%}
+                                </select>
+                            </div>
+                            <!-- Ability or SKill selection -->
+                            <div class="blocker">
+                                on
+                                <select id="ability_skill" class="custom-select">
+                                {% for ability_skill in abilities_n_skills %}
+                                    {% if ability_skill in main_abilities %}
+                                        <option value="{{ ability_skill }}">{{ ability_skill }}</option>
+                                    {% else %}
+                                        <option value="{{ ability_skill }}">&nbsp&nbsp;{{ ability_skill }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div id="contest_div" style="display: none;">
+                            <!-- Ability1 or SKill1 selection -->
+                            <div class="blocker">
+                                Ability/Skill 1
+                                <select id="ability_skill_1" class="custom-select">
+                                    {% for ability_skill in abilities_n_skills %}
+                                        {% if ability_skill in main_abilities %}
+                                            <option value="{{ ability_skill }}">{{ ability_skill }}</option>
+                                        {% else %}
+                                            <option value="{{ ability_skill }}">&nbsp&nbsp;{{ ability_skill }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Ability2 or SKill2 selection -->
+                            <div class="blocker">
+                                Ability/Skill 2
+                                <select id="ability_skill_2" class="custom-select">
+                                    {% for ability_skill in abilities_n_skills %}
+                                        {% if ability_skill in main_abilities %}
+                                            <option value="{{ ability_skill }}">{{ ability_skill }}</option>
+                                        {% else %}
+                                            <option value="{{ ability_skill }}">&nbsp&nbsp;{{ ability_skill }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row last-row">
+                <div class="col-sm-6">
+                    <a class="btn" href="{{ url_for('exit_session', game_id_url=game['_id']) }}">Exit Session</a>
+                    <input class="btn" type="button" value="Start Combat!" id="start_combat">
+                </div>
+                <div class="col-sm-6 right-floater">
+                    <input class="btn" id="ability_check_button" type="button" value="DOOM!">
+                </div>
+            </div>
+        {% endif %}
+
+        <footer>
+            <div class="footer">
+                Dungeons & Dragons, D&D, their respective logos,
+                and all Wizards titles and characters are property
+                of Wizards of the Coast LLC in the U.S.A. and other countries.
+                &copy;2017 Wizards.
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

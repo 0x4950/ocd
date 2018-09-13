@@ -1,0 +1,61 @@
+html,body {
+    margin:0;
+    padding:0;
+    height:100%;
+    color: #DCDCCD;
+    background-color: #DA3535;
+}
+
+.container-fluid {
+    min-height:100%;
+    position:relative;
+}
+
+.row {
+    padding-bottom: 30px;
+}
+
+.ability_score_div {
+    display: block;
+    max-width: 200px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.scores_buttons {
+    float: right;
+    
+}
+
+p {
+    font-weight: bold;
+}
+
+.form-control {
+    max-width: 200px;
+}
+
+.level_up_selection {
+    margin-bottom: 15px;
+}
+
+.btn {
+    color: #DA3535;
+    background-color: #DCDCCD;
+}
+
+.btn[type="submit"] {
+    margin-top: 20px;
+    margin-bottom: 5px;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    text-align: center;
+    color: #DCDCCD;
+}

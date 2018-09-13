@@ -1,0 +1,67 @@
+html, body {
+    margin:0;
+    padding:0;
+    height:100%;
+    background-color: #DA3535;
+}
+
+.container-fluid {
+    min-height:100%;
+    position:relative;
+}
+
+.col-sm-12 {
+    padding-bottom: 30px;
+}
+
+#welcome-message {
+    font-size: 30px;
+    color: #DCDCCD;
+    font-weight: bold;
+}
+
+.btn {
+    color: #DA3535;
+    background-color: #DCDCCD;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    width: 200px;
+}
+
+#game-info {
+    font-weight: bold;
+    display: block;
+    color: #DCDCCD;
+    max-width: 700px;
+    border-radius: 7px;
+    padding-bottom: 10px;
+}
+
+#game-info p {
+    padding-left: 10px;
+    margin-bottom: 5px;
+}
+
+.player-info {
+    margin-left: 1%;
+    margin-right: 15%;
+    margin-bottom: 5px;
+    border-style: solid;
+    border-color: #DCDCCD;
+    border-radius: 7px;
+}
+
+.par_title {
+    text-decoration: underline;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    text-align: center;
+    color: #DCDCDC;
+}

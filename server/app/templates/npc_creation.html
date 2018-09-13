@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NPC Creation</title>
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/npc_creation_style.css') }}">
+
+    <script>
+        url = 'http://' + document.domain + ':' + location.port + '/game/' + "{{ game_id }}";
+
+        $(document).on("click", ":input[value='Delete']", function() {
+            window.location.href = url + "/delete_npc?npc_name=" + $(this).attr("id");
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <p>You can create new NPCs</p>
+                <form class="form" method="POST">
+                    {% for field in npc_creation_form %}
+                        {% if field.type == 'CSRFTokenField' %}
+                            {{ field }}<br>
+                        {% else %}
+                            {% if field.type == 'FieldList' %}
+                                <div class="form-group">
+                                    {{ field.label }} {{ field[0] }}
+                                </div>
+                            {% else %}
+                                <div class="form-group">
+                                    {{ field.label}} {{ field }}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    <input class="btn" type="submit" class="btn btn-danger" value="Create NPC">
+                </form>
+            </div>
+
+            <div class="col-sm-6">
+                <p>You can view and delete already created NPCs</p>
+                <div id="npcs_list">
+                        <table class="table">
+                                <thead>
+                                  <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                    {% for npc in npcs_list %}
+                                        <tr>
+                                          <th scope="row">{{ loop.index }}</th>
+                                          <td>{{ npc['npc_name'] }}</td>
+                                          <td>{{ npc['npc_description'] }}</td>
+                                          <td><input class="btn" type="button" value="Delete" id="{{ npc['npc_name'] }}"></td>
+                                        </tr>
+                                    {% endfor %}
+                        </table>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+                <div class="footer">
+                    Dungeons & Dragons, D&D, their respective logos,
+                    and all Wizards titles and characters are property
+                    of Wizards of the Coast LLC in the U.S.A. and other countries.
+                    &copy;2017 Wizards.
+                </div>
+        </footer>
+    </div>
+</body>
+</html>

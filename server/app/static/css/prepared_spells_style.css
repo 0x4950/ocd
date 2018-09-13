@@ -1,0 +1,70 @@
+html, body {
+    margin:0;
+    padding:0;
+    height:100%;
+    background-color: #DA3535;
+}
+
+.container-fluid {
+    min-height:100%;
+    position:relative;
+}
+
+#spell_counter {
+    color:#DCDCCD;
+    font-size: 30px;
+    text-align: center;
+}
+
+#first-lvl-spells, #second-lvl-spells, #third-lvl-spells {
+    margin-top : 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    border-radius: 7px;
+    margin-left: 30%;
+    margin-right: 30%;
+    background-color: #DCDCCD;
+}
+
+.spells_list {
+    align-items: center;
+    justify-content: center;
+}
+
+.spell_entry {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spell-level-info {
+    font-size: 24px;
+    text-align: center;
+}
+
+#submit_button_div {
+    padding-bottom: 30px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn {
+    color: #DA3535;
+    background-color: #DCDCCD;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    text-align: center;
+    color: #DCDCDC;
+}

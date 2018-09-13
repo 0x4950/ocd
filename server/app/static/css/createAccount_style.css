@@ -1,0 +1,52 @@
+html,body {
+    height:100%;
+    width:100%;
+    margin:0;
+    background-color: #DA3535;
+}
+
+body {
+    display:flex;
+}
+
+.header {
+    color: #DA3535;
+}
+
+#logo {
+    max-width: 200px;
+    height:auto;
+}
+
+.create-account-box {
+    border-radius: 25px;
+    padding: 75px;
+    background-color: #DCDCDC;
+    margin: auto;
+    text-align: center;
+}
+
+::-webkit-input-placeholder {
+    text-transform: capitalize;
+}
+
+input[name='username'], [name='password'] {
+    border-style: solid;
+    border-color: #DA3535;
+    padding: 5px;
+    background-color: #DCDCDC;
+    border-width: 3px;
+}
+
+.flashed_message {
+    position: relative;
+}
+
+.footer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    text-align: center;
+    color: #DCDCDC;
+}

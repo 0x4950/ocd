@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<head>
+  <title>Login Page</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/loginPage_style.css') }}">
+
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-12">
+        <div class="login-box">
+            <form id="form" method="POST">
+              <h3 class="header">Sign in to OCD</h3>
+              <div class="form-group">
+                <input type="text" name="username" placeholder="Username">
+              </div>
+              <div class="form-group">
+                <input type="password" name="password" placeholder="Password">
+              </div>
+
+              {% with messages = get_flashed_messages(with_categories=true) %}
+              <!-- Error messages flashed. -->
+                  {% if messages %}
+                      <u1 class=flashes>
+                          {% for category, message in messages %}
+                              <p class="flashed_message">{{ message }}</p>
+                          {% endfor %}
+                      </u1>
+                  {% endif %}
+              {%endwith%}
+
+              <input type="submit" class="btn" value="Sign in"><br>
+              <a href="{{ url_for('create_account') }}" value="create_account">Don't have an account? Create one now.</a>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    <footer>
+      <div class="footer">
+        Dungeons & Dragons, D&D, their respective logos,
+        and all Wizards titles and characters are property
+        of Wizards of the Coast LLC in the U.S.A. and other countries.
+        &copy;2018 Wizards.
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

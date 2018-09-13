@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prepared Weapons</title>
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/prepared_weapons_style.css') }}">
+</head>
+
+<body>
+    <div class="container-fluid">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <u1 class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </u1>
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Prompting message -->
+        <div class="row">
+            <div class="col-sm-12" id="message">
+                <p>Select which weapons you will have ready for battle.</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div id="form">
+                <form id="weapons-form" method="POST">
+                    <!-- Weapons listing -->
+                    {% for weapon in character['weapons'] %}
+                        <div class="weapon">
+                            <input type="checkbox" name="{{ weapon }}">{{ weapon|capitalize }}<br>
+                        </div>
+                    {% endfor %}
+
+                    <!-- Shield option, if exists -->
+                    {% if 'shield' in character['armor'] %}
+                        <div class="shield">
+                            <input type="checkbox" id="shield" name="shield">Shield<br>
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <div class="row" id="submit_button_div">
+            <!-- Submit button. -->
+            <input type="submit" class="btn" form="weapons-form" value="Prepare weapons">
+        </div>
+
+        <footer>
+                <div class="footer">
+                    Dungeons & Dragons, D&D, their respective logos,
+                    and all Wizards titles and characters are property
+                    of Wizards of the Coast LLC in the U.S.A. and other countries.
+                    &copy;2017 Wizards.
+                </div>
+        </footer>
+    </div>
+</body>
+</html>

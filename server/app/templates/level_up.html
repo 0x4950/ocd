@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Level up</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/level_up_style.css') }}">
+
+    <script>
+        $(document).ready(function(){
+            var character = {{ character|tojson }};
+            var ability_score_points = character['ability_score_points'];
+
+            $(".minus").click(function () {
+                var id = $(this).parent("div").prop("id");
+                var old_score = parseInt($("#" + id + " span").text());
+                var new_score = old_score - 1;
+                
+                if (new_score >= character['ability_scores'][id]) {
+                        $('input:hidden[name=' + id + ']').val(new_score);
+                        $("#" + id + " span").text(new_score);
+                        ability_score_points += 1;
+                }
+            });
+
+            $(".plus").click(function () {
+                var id = $(this).parent("div").prop("id");
+                var old_score = parseInt($("#" + id + " span").text());
+                var new_score = old_score + 1;
+
+                if (new_score <= 20) {
+                    if (ability_score_points > 0) {
+                        $("input:hidden[name=" + id + "]").val(new_score);
+                        $("#" + id + " span").text(new_score);
+                        ability_score_points -= 1;
+                    }
+                }
+            });
+
+            $("#martial_archetype").change(function () {
+                $("input:hidden[name=" + $(this).val() + "]");
+            });
+
+            $("#arcane_tradition").change(function () {
+                $("input:hidden[name=" + $(this).val() + "]");
+            });
+
+            $("#martial_archetype").trigger("change");
+            $("#arcane_tradition").trigger("change");
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-12">
+                <!-- Flash any error messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <u1 class=flashes>
+                            {% for category, message in messages %}
+                                <li class="{{ category }}">{{ message }}</li>
+                            {% endfor %}
+                        </u1>
+                    {% endif %}
+                {%endwith%}
+
+                <!-- Find out the new level of the character -->
+                {% set new_level = character['level'] + character['levels_gained'] %}
+
+                {% set sth_shown = false %}
+
+                {% if character and character['level_up_ready'] %}
+
+                    {% if (new_level > 3) and (character['asi_used'] == false) %}
+                        <div class="level_up_selection">
+                            <p>You have {{ character['ability_score_points'] }} points to spent.</p>
+                            {% for ability_score in character['ability_scores'] %}
+                                <div class="ability_score_div">
+                                    <label for="{{ ability_score }}">{{ ability_score }}</label>
+                                    <div class="scores_buttons" id="{{ ability_score }}">
+                                        <input class="btn btn-sm minus" type="button" value="-">
+                                        <span>{{ character['ability_scores'][ability_score] }}</span>
+                                        <input class="btn btn-sm plus" type="button" value="+">
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% set sth_shown = true %}
+                    {% endif %}
+
+                    {% if character['class'] == 'fighter' %}
+                        <div class="level_up_selection">
+                            <p>Select the Martial Archetype of your choice.</p>
+                            {% if (new_level > 2) and ('martial_archetype' not in character) %}
+                                <select class="form-control" id="martial_archetype">
+                                    <option value="champion">Champion</option>
+                                </select>
+                            {% endif %}
+                        </div>
+                        {% set sth_shown = true %}
+                    {% endif %}
+
+                    {% if character['class'] == 'wizard' %}
+                        <div class="level_up_selection">
+                            <p>Select the Arcane Tradition of your choice.</p>
+                            {% if (new_level > 1) and ('arcane_tradition' not in character)  %}
+                                <select class="form-control" id="arcane_tradition">
+                                    <<option value="school_of_evocation">School of Evocation</option>
+                                </select>
+                            {% endif %}
+                        </div>
+                        {% set sth_shown = true %}
+                    {% endif %}
+
+                {% endif %}
+
+                {% if not sth_shown %}
+                <p><h3>You don't have to make any selections this time.</h3></p>
+                {% endif %}
+
+                <form method="POST">
+                    {% if (new_level > 3) and (character['asi_used'] == false) %}
+                        {% for ability_score in character['ability_scores'] %}
+                            <input type="hidden" name="{{ ability_score }}" value="{{ character['ability_scores'][ability_score] }}">
+                        {% endfor %}
+                    {%endif%}
+                    
+                    {% if character['class'] == 'fighter' %}
+                        {% if (new_level > 2) and ('martial_archetype' not in character) %}
+                            <input type="hidden" name="martial_archetype" value="champion">
+                        {% endif %}
+                    {% endif %}
+
+                    {% if character['class'] == 'wizard' %}
+                        {% if (new_level > 1) and ('arcane_tradition' not in character)  %}
+                            <input type="hidden" name="arcane_tradition" value="school_of_evocation">
+                        {% endif %}
+                    {% endif %}
+
+                    <input class="btn" type="submit" value="Level up">
+                </form>              
+            </div>
+        </div>
+
+        <footer>
+                <div class="footer">
+                    Dungeons & Dragons, D&D, their respective logos,
+                    and all Wizards titles and characters are property
+                    of Wizards of the Coast LLC in the U.S.A. and other countries.
+                    &copy;2017 Wizards.
+                </div>
+        </footer>
+    </div>
+</body>
+</html>
