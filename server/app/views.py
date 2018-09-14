@@ -103,13 +103,22 @@ def create_account():
 @app.route("/dashboard/", methods=['GET', 'POST'])
 @login_required
 def dashboard():
+  return render_template('dashboard.html')
+
+
+@app.route('/api/games/', methods=['GET', 'POST'])
+@login_required
+def get_and_create_games():
   if request.method == "POST":
-    name_conflict = gamesCollection.find_one({'$and':[{'name': request.form['camp_name']},
+    msg = ''
+    newCampName = request.json['name']
+    name_conflict = gamesCollection.find_one({'$and':[{'name': newCampName},
     {'$or':[{'dm_id': current_user.id}, {'players.pid': current_user.id}]}]})
+
     if not name_conflict:
       # Insert the game document into 'gamesCollection' with info provided.
       game_id = gamesCollection.insert_one({
-        'name': request.form['camp_name'],
+        'name': newCampName,
         'dm_id': current_user.id,
         'players': [],
         'staus': 'offline',
@@ -121,14 +130,9 @@ def dashboard():
         {'username': current_user.username},
         {'$push': {'participatingGames': str(game_id.inserted_id)}})
     else:
-      flash('You already participate in a campaign with that name.Please choose another name for your new campaign.')
+      return jsonify({'msg':
+      'You already participate in a campaign with that name. Please choose another name for your new campaign.'})
 
-  return render_template('dashboard.html')
-
-
-@app.route('/api/games/', methods=['GET'])
-@login_required
-def get_task():
   games = []
   games_ids = usersCollection.find_one({'username': current_user.username})['participatingGames']
 
@@ -139,6 +143,7 @@ def get_task():
     game_dict['id'] = str(game_document['_id'])
     game_dict['created_time'] = game_document['_id'].generation_time
     games.append(game_dict)
+
 
   return jsonify(games)
 
