@@ -7,7 +7,7 @@ from pymongo import MongoClient, ReturnDocument
 from jsonpickle import set_encoder_options, encode, decode
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import render_template, redirect, url_for, request, flash, json, session, jsonify
+from flask import render_template, redirect, url_for, request, flash, json, session, jsonify, make_response
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 
 usersCollection = mongo.db.users
@@ -106,7 +106,7 @@ def dashboard():
   return render_template('dashboard.html')
 
 
-@app.route('/api/games/', methods=['GET', 'POST'])
+@app.route('/api/get_and_create_games/', methods=['GET', 'POST'])
 @login_required
 def get_and_create_games():
   if request.method == "POST":
@@ -130,9 +130,7 @@ def get_and_create_games():
         {'username': current_user.username},
         {'$push': {'participatingGames': str(game_id.inserted_id)}})
     else:
-      return jsonify({'msg':
-      'You already participate in a campaign with that name. Please choose another name for your new campaign.'})
-
+      return make_response(jsonify({'msg': 'already_part'}), 600)
   games = []
   games_ids = usersCollection.find_one({'username': current_user.username})['participatingGames']
 
@@ -143,7 +141,6 @@ def get_and_create_games():
     game_dict['id'] = str(game_document['_id'])
     game_dict['created_time'] = game_document['_id'].generation_time
     games.append(game_dict)
-
 
   return jsonify(games)
 
