@@ -1,10 +1,8 @@
-from . import views
 import dice
+from app import mongo
 
-db = views.db
-
-combat_session_collection = db['combat_session_monsters']
-spells_collection = db['spells']
+combatSessionCollection = mongo.db.combat_session_monsters
+spellsCollection = mongo.db.spells
 
 # Cleric Life domain spells.
 life_domain_spells = (('bless', 'cure_wounds'), (),
@@ -29,7 +27,7 @@ def set_prepared_spells(character, selected_spells):
         if character['prepared_spells_length'] >= len(selected_spells):
             for spell_name in selected_spells:
                 # Load spell document from the database.
-                spell_document = spells_collection.find_one({'name': spell_name})
+                spell_document = spellsCollection.find_one({'name': spell_name})
 
                 # Check if the spell level is alright.
                 if character['level'] < 2 and spell_document['level'] <= 1:
@@ -75,7 +73,7 @@ def saving_throw_roll_dice(character, ability, game_id):
 
                 # Remove buff after it was used.
                 if buff['expires_on_use']:
-                    combat_session_collection.update_one(
+                    combatSessionCollection.update_one(
                         {'game_id': ObjectId(game_id),
                          'character_documents.combatidentifier': character['combatidentifier']},
                         {'$pull': {'monsters.$.buffs.temporary.saving_throws': {'type': 'dice_roll_add'}}})
@@ -197,7 +195,7 @@ def apply_healing(game_id, actor, target, calc_amount, max_amount):
         healing_amount = target['maximum_hit_points'] - target['current_hit_points']
 
     # Update target's document with new current_hit_points.
-    combat_session_collection.update_one(
+    combatSessionCollection.update_one(
         {'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
         {'$inc': {'character_documents.$.current_hit_points': healing_amount}})
 
@@ -250,7 +248,7 @@ def channel_divinitiy_turn_undead(actor, game_id, time):
     highest_y = character_xy[1] + grid_squares
 
     # Check for every character in the battlefield
-    monsters = combat_session_collection.find_one(
+    monsters = combatSessionCollection.find_one(
         {'game_id': ObjectId(game_id), 'character_documents.type': 'monster'},
         {'_id': 0, 'character_documents': 1})['character_documents']
 
@@ -271,7 +269,7 @@ def channel_divinitiy_turn_undead(actor, game_id, time):
 
                 if target_rolled <= spell_save_dc:
                     if 'channel_divinity_destroy_undead' in actor['buffs']['spellcasting']:
-                        combat_session_collection.update_one(
+                        combatSessionCollection.update_one(
                             {'game_id': ObjectId(game_id),
                             'character_documents.combat_identifier': monster['combat_identifier']},
                             {'$set': {'status': 'dead'}})
@@ -280,7 +278,7 @@ def channel_divinitiy_turn_undead(actor, game_id, time):
                         temporary_buff['value'] = 'turned'
                         temporary_buff['expires'] = time + 60
 
-                        combat_session_collection.update_one(
+                        combatSessionCollection.update_one(
                             {'game_id': ObjectId(game_id),
                             'character_documents.combat_identifier': monster['combat_identifier']},
                             {'$addToSet': {'character_documents.$.debuffs.conditions': temporary_buff}})
@@ -300,7 +298,7 @@ def channel_divinitiy_preserve_life(actor, targets, game_id):
     for target in targets:
         return_amount =  apply_healing(game_id, actor, target, calc_heal, calc_heal)
 
-        healed_character = combat_session_collection.find_one(
+        healed_character = combatSessionCollection.find_one(
             {'game_id': ObjectId(game_id),
              'character_documents.combat_identifier': target['combat_identifier']},
             {'_id': 0, 'character_documents.$': 1})['character_documents'][0]
@@ -323,7 +321,7 @@ def second_wind(actor, game_id, time):
 
     return_amount = apply_healing(game_id, actor, actor, calc_heal, max_heal)
 
-    healed_character = combat_session_collection.find_one(
+    healed_character = combatSessionCollection.find_one(
         {'game_id': ObjectId(game_id),
          'character_documents.combat_identifier': actor['combat_identifier']},
         {'_id': 0, 'character_documents.$': 1})['character_documents'][0]
@@ -336,7 +334,7 @@ def second_wind(actor, game_id, time):
 
 def action_surge(actor, game_id, time):
     # Increase the number of actions per turn.
-    combat_session_collection.update_one(
+    combatSessionCollection.update_one(
         {'game_id': ObjectId(game_id), 'character_documents.combat_identifier': actor['combat_identifier']},
         {'$inc': {'character_documents.$.actions_per_turn': 1}})
 
@@ -364,7 +362,7 @@ def bless(game_id, actor, targets, time):
                     break
 
             if good_buff:
-                combat_session_collection.update_one(
+                combatSessionCollection.update_one(
                     {'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
                     {'$addToSet': {
                         'character_documents.$.buffs.temporary.saving_throws': temporary_buff,
@@ -386,7 +384,7 @@ def cure_wounds(game_id, actor, targets):
 
     return_amount = apply_healing(game_id, actor, target, calc_heal, max_heal)
 
-    healed_character = combat_session_collection.find_one(
+    healed_character = combatSessionCollection.find_one(
         {'game_id': ObjectId(game_id),
          'character_documents.combat_identifier': target['combat_identifier']},
         {'_id': 0, 'character_documents.$': 1})['character_documents'][0]
@@ -403,7 +401,7 @@ def lesser_restoration(game_id, actor, targets):
     
     for condition in conds:
         if condition in target['conditions']:
-            combat_session_collection.update_one(
+            combatSessionCollection.update_one(
                 {'game_id': ObjectId(game_id),
                  'character_documents.combat_identifier': target['combat_identifier']},
                 {'$pull': {'character_documents.$.conditions': condition}})
@@ -445,7 +443,7 @@ def beacon_of_hope(game_id, actor, targets, time):
                 break
 
         if good_buff:
-            combat_session_collection.update_one(
+            combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id),
             'character_documents.combat_identifier': target['combat_identifier']},
             {'$addToSet': {'character_documents.$.buffs.temporary.saving_throws': temporary_buff,
@@ -456,7 +454,7 @@ def revivify(game_id, actor, targets):
     target = targets[0]
 
     if target['health_status'] == 'dead':
-        combat_session_collection.update_one(
+        combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id),
              'character_documents.combat_identifier': target['combat_identiifer']},
             {'$set': {'character_documents.$.health_status': 'alive',
@@ -481,7 +479,7 @@ def resistance(game_id, actor, targets, time):
             break
 
     if good_buff:
-        combat_session_collection.update_one(
+        combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
             {'$addToSet': {'character_documents.$.buffs.temporary.saving_throws': temporary_buff}})
 
@@ -489,7 +487,7 @@ def spare_the_dying(game_id, actor, targets):
     target = targets[0]
 
     if target['current_hit_points'] == 0:
-        combat_session_collection.update_one({'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
+        combatSessionCollection.update_one({'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
                                              {'$set': {'character_documents.$.health_status': 'stable'}})
 
 def sacred_flame(game_id, actor, targets):
@@ -550,7 +548,7 @@ def healing_word(game_id, actor, targets):
 
     return_amount = apply_healing(game_id, actor, target, calc_heal, max_heal)
 
-    healed_character = combat_session_collection.find_one(
+    healed_character = combatSessionCollection.find_one(
         {'game_id': ObjectId(game_id),
          'character_documents.combat_identifier': target['combat_identifier']},
         {'_id': 0, 'character_documents.$': 1})['character_documents'][0]
@@ -600,7 +598,7 @@ def shield_of_faith(game_id, actor, targets, time):
 
     if good_buff:
         # Update character's temporary armor class buffs.
-        combat_session_collection.update_one(
+        combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
             {'$addToSet': {'character_documents.$.temporary.armor_class': temporary_buff}})
 
@@ -623,7 +621,7 @@ def aid(game_id, actor, targets, time):
                 break
 
         if good_buff:
-            combat_session_collection.update_one(
+            combatSessionCollection.update_one(
                 {'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
                 {'$addToSet': {'character_documents.$.buffs.temporary.current_hit_points': temporary_buff,
                                'character_documents.$.buffs.temporary.maximum_hit_points': temporary_buff}})
@@ -642,7 +640,7 @@ def hold_person(game_id, actor, targets, time):
         temporary_buff['value'] = 'paralyzed'
         temporary_buff['expires'] = time + 60
 
-        combat_session_collection.update_one(
+        combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id),
              'character_documents.combat_identifier': target['combat_identifier']},
             {'$addToSet': {'character_documents.$.debuffs.conditions': temporary_buff}})
@@ -651,7 +649,7 @@ def protection_from_poison(game_id, actor, targets):
     target = targets[0]
 
     if 'poisoned' in target['conditions']:
-        combat_session_collection.update_one(
+        combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
             {'$pull': {'character_documents.$.conditions': 'poisoned'}})
 
@@ -667,7 +665,7 @@ def mass_healing_word(game_id, actor, targets):
 
         return_amount =apply_healing(game_id, actor, target, calc_heal, max_heal)
 
-        healed_character = combat_session_collection.find_one(
+        healed_character = combatSessionCollection.find_one(
             {'game_id': ObjectId(game_id),
              'character_documents.combat_identifier': target['combat_identifier']},
             {'_id': 0, 'character_documents.$': 1})['character_documents'][0]
@@ -684,7 +682,7 @@ def protection_from_energy(game_id, actor, targets, time, subspell):
     temporary_buff['expires_on_use'] = False
     temporary_buff['expires'] = time + 3600
     
-    spell_document = spells_collection.find_one({'name': spell_name})
+    spell_document = spellsCollection.find_one({'name': spell_name})
     if subspell in spell_document['subspells']:
         temporary_buff['value'] = subspell
 
@@ -698,7 +696,7 @@ def protection_from_energy(game_id, actor, targets, time, subspell):
                     break
 
             if good_buff:
-                combat_session_collection.update_one(
+                combatSessionCollection.update_one(
                     {'game_id': ObjectId(game_id), 'character_documents.combat_identifier': target['combat_identifier']},
                     {'$addToSet': {'character_documents.$.buffs.temporary.resistances': temporary_buff}})
 
@@ -777,7 +775,7 @@ def shield(game_id, actor, time):
     good_buff = True
 
     # Calculate how many seconds is a round.
-    result = combat_session_collection.find_one(
+    result = combatSessionCollection.find_one(
         {'game_id': ObjectId(game_id)})['character_documents']
 
     for character in result:
@@ -798,7 +796,7 @@ def shield(game_id, actor, time):
 
     if good_buff:
         # Update character's temporary armor class buffs.
-        combat_session_collection.update_one(
+        combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id),
             'character_documents.combat_identifier': actor['combat_identifier']},
             {'$addToSet': {'character_documents.$.buffs.temporary.armor_class': temporary_buff}})
@@ -835,7 +833,7 @@ def false_life(game_id, actor, time):
             break
 
     if good_buff:
-        combat_session_collection.update_one(
+        combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id),
             'character_documents.combat_identifier': target['combat_identifier']},
             {'$addToSet': {'character_documents.$.buffs.temporary.temporary_hit_points': temporary_buff}})
@@ -859,7 +857,7 @@ def mage_armor(game_id, actor, targets, time):
                 break
 
         if good_buff:
-            combat_session_collection.update_one(
+            combatSessionCollection.update_one(
                 {'game_id': ObjectId(game_id),
                 'character_documents.combat_identifier': target['combat_identifier']},
                 {'$addToSet': {'character_documents.$.buffs.temporary.armor_class': temporary_buff}})
@@ -896,7 +894,7 @@ def acid_arrow(game_id, actor, targets):
         temporary_buff['damage_type'] = 'acid'
         temporary_buff['amount'] = dice.roll('2d4t')
 
-        combat_session_collection.update_one(
+        combatSessionCollection.update_one(
             {'game_id': ObjectId(game_id),
              'character_documents.combat_identifier': target['combat_identifier']},
             {'$addToSet': {'character_documents.$.debuffs.overtime_effects': temporary_buff}})

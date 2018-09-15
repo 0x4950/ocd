@@ -1,17 +1,13 @@
 {
-  "name": "fullstacktemplate",
-  "version": "1.0.0",
-  "description": "Fullstack Template",
-  "main": "index.js",
+  "name": "react-ocd",
+  "version": "0.0.1",
+  "description": "D&D web application, using React.",
   "scripts": {
-    "dev": "webpack -d --watch",
-    "prod": "webpack -p"
+    "dev": "webpack -d --watch"
   },
   "keywords": [
     "python",
-    "react",
-    "npm",
-    "webpack"
+    "react"
   ],
   "author": "John Papagiannidis",
   "license": "MIT",

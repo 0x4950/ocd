@@ -3,6 +3,7 @@ const path = require("path");
 
 const config = [
   {
+    // Bundle for the character creation page.
     entry: __dirname + '/character-create-js/character-create.js',
     output: {
         path: path.join(__dirname, '/../server/app/static/dist/'),
@@ -27,6 +28,7 @@ const config = [
     },
   },
   {
+    // Bundle for the dashboard page.
     entry: __dirname + '/dashboard-js/dashboard.js',
     output: {
         path: path.join(__dirname, '/../server/app/static/dist/'),

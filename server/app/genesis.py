@@ -1,10 +1,7 @@
-from . import character
-from pymongo import MongoClient
+from app import mongo, character
 
-client = MongoClient('mongodb://heroku_t67kkwpk:ucevqbvtnnv7lr2bl0sc33ov6d@ds011664.mlab.com:11664/heroku_t67kkwpk')
-db = client.get_default_database()
-races_collection = db['races']
-classes_collection = db['classes']
+classesCollection = mongo.db.classes
+racesCollection = mongo.db.races
 
 skills = ('acrobatics', 'animal_handling', 'arcana', 'athletics', 'deception', 'history',
           'insight', 'intimidation', 'investigation', 'medicine', 'nature', 'perception',
@@ -19,8 +16,8 @@ def creator(form, player_name, game_id):
     char_creation_args['game_id'] = game_id
     char_creation_args['player_name'] = player_name
     char_creation_args['selected_name'] = form.characterName.data
-    char_creation_args['selected_race'] = races_collection.find_one({'race': form.race.data})
-    char_creation_args['selected_class'] =  classes_collection.find_one({'class': form.dclass.data})
+    char_creation_args['selected_race'] = racesCollection.find_one({'race': form.race.data})
+    char_creation_args['selected_class'] =  classesCollection.find_one({'class': form.dclass.data})
     char_creation_args['selected_level'] = form.level.data
     char_creation_args['selected_alignment'] = form.alignment.data
     char_creation_args['selected_cantrips'] = form.cantrips.data

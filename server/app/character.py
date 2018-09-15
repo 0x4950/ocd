@@ -1,12 +1,10 @@
 from math import floor
-from pymongo import MongoClient
+from app import mongo
 
-client = MongoClient('mongodb://heroku_t67kkwpk:ucevqbvtnnv7lr2bl0sc33ov6d@ds011664.mlab.com:11664/heroku_t67kkwpk')
-db = client.get_default_database()
-packs_collection = db['packs']
-armor_collection = db['armors']
-weapons_collection = db['weapons']
-spells_collection = db['spells']
+packsCollection = mongo.db.packs
+armorCollection = mongo.db.armors
+weaponsCollection = mongo.db.weapons
+spellsCollection = mongo.db.spells
 
 MAX_ABILITY_SCORE = 20
 
@@ -187,7 +185,7 @@ class Character:
     def set_equipment(self, equipment_chosen, class_items, class_document):
         if equipment_chosen in class_document['not_for_save']['equipment_pool']['pack']:
             # Load pack's items from database
-            equipment_chosen = packs_collection.find_one({"name": equipment_chosen})
+            equipment_chosen = packsCollection.find_one({"name": equipment_chosen})
 
             # Push an empty dictionary inside the equipment list
             self.equipment.append({})
@@ -229,7 +227,7 @@ class Character:
             # Check if cantrips chosen do now exceed the cantrips known.
             if i < self.cantrips_known:
                 # Check if spell is an eligable cantrip(exists, class-releated, zero level).
-                if spells_collection.find_one({'name': cantrip, 'class': getattr(self, 'class'), 'level': 0}, {}):
+                if spellsCollection.find_one({'name': cantrip, 'class': getattr(self, 'class'), 'level': 0}, {}):
                     self.cantrips.add(cantrip)
                 else:
                     raise CustomException("You cannot choose that spell as a cantrip.")
@@ -270,7 +268,7 @@ class Character:
         # Armor choosen.
         if 'armor' in class_document['not_for_save']['equipment_pool']:
             if armor_chosen in class_document['not_for_save']['equipment_pool']['armor']:
-                for armor in armor_collection.find({}, {'_id': 0, 'name': 1}):
+                for armor in armorCollection.find({}, {'_id': 0, 'name': 1}):
                     if armor['name'] in armor_chosen:
                         self.armor.add(armor['name'])
             else:
@@ -278,7 +276,7 @@ class Character:
 
     def set_weapons(self, selected_weapons, selected_armor, character_equipment_pool):
         # Check for weapons bould to armor.
-        for weapon in weapons_collection.find({}, {'_id': 0, 'name': 1}):
+        for weapon in weaponsCollection.find({}, {'_id': 0, 'name': 1}):
             if weapon['name'] in selected_armor:
                 self.weapons.append(weapon['name'])
 
@@ -325,7 +323,7 @@ class Character:
 
         if self.domain == 'life':
             # Bonus proficiency with heave armor.
-            for armor in armor_collection.find({'armor_type': 'heavy_armor'}):
+            for armor in armorCollection.find({'armor_type': 'heavy_armor'}):
                 self.proficiencies['armor'].add(armor['name'])
             
             # Disciple of Life buff
@@ -358,7 +356,7 @@ class Character:
             if armor != 'shield':
                 object_armor = armor
         if object_armor:
-            db_armor = armor_collection.find_one({"name": object_armor})
+            db_armor = armorCollection.find_one({"name": object_armor})
 
         # Calculate Dexterity modifier
         dex_mod = get_ability_score_modifier(self, 'dexterity')

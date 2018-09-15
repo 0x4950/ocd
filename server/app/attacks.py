@@ -1,10 +1,6 @@
-from math import floor
 from dice import roll
-from . import spells
-from pymongo import MongoClient
-from config import uri
-
-weapons_collection = db['weapons']
+from math import floor
+from app import spells
 
 class PrepareWeaponException(Exception):
     pass

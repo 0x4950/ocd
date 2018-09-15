@@ -1,5 +1,14 @@
-node_modules/
-venv/
-.vscode/
-__pycache__/
-.webassets-cache/
+# Visual studio code settings.
+**/.vscode
+
+# Node modules.
+**/node_modules
+
+# Python virtual environment.
+**/venv
+
+# Python cache files.
+**/__pycache__
+
+# Flask assets cache.
+**/.webassets-cache
