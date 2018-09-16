@@ -11,40 +11,21 @@
 </head>
 
 <body>
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-sm-12">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <u1 class=flashes>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </u1>
-        {% endif %}
-        {% endwith %}
-      
-        <div id="welcome_message">
-          <h3>Welcome, {{ current_user.username}}</h3>
-        </div>
+  <!-- Flash error messages. -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <u1 class=flashes>
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </u1>
+    {% endif %}
+  {% endwith %}
 
-        <!-- Load React component-->
-        <div id="content"></div>
-        {% assets "dashboard_js" %}
-        <script type="text/javascript" src="{{ ASSET_URL }}" type="text/javascript"></script>
-        {% endassets %}
-
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    <div class="footer">
-      Dungeons & Dragons, D&D, their respective logos,
-      and all Wizards titles and characters are property
-      of Wizards of the Coast LLC in the U.S.A. and other countries.
-      &copy;2017 Wizards.
-    </div>
-  </footer>
+  <!-- Load React component-->
+  <div id="content"></div>
+  {% assets "dashboard_js" %}
+  <script type="text/javascript" src="{{ ASSET_URL }}" type="text/javascript"></script>
+  {% endassets %}
 </body>
 </html>

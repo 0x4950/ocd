@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import Footer from '../components/footer';
 
 class App extends Component {
   constructor(props) {
@@ -18,33 +19,44 @@ class App extends Component {
   }
 
   render() {
+    this.state.campaignsList.map(campaign => {
+      console.log(typeof(campaign.created_time));
+      });
     return (
       <React.Fragment>
-        <div id="games_list">
-          <div id="games_header">
-            <h1>Campaigns</h1>
-          </div>
-          <div id="actual_list">
-            {this.state.campaignsList.map(campaign => {
-              return (
-                <div key={campaign.id} class="game_div">
-                  <label for={campaign.name}></label>
-                  <a class="game_link" href={ 'http://localhost:5000/campaign/' + campaign.id}>
-                    {campaign.name}
-                    <span class="create_date">Created on: { campaign.created_time}</span>
-                  </a>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        
+        <div className="container-fluid">
+          <div className="row">
+            <div className="col-sm-12">
 
-        <div>
-          <input type="text" onChange={this.handleNameChange} placeholder="Campaign name"></input>
-          <button onClick={this.createNewCampaign}>Create new campaign</button>
-          <p hidden={this.state.canCreate}>You cannot.</p>
-          <button onClick={this.logout}>Sign out</button>
+              <div id="welcome_message">
+                <h3>Welcome, user</h3>
+              </div>
+
+              <div id="games_list">
+                <div id="games_header">
+                  <h1>Campaigns</h1>
+                </div>
+              
+              <div id="actual_list">
+                {this.state.campaignsList.map(campaign => {
+                  return (
+                    <div key={campaign.id} className="game_div">
+                      <label htmlFor={campaign.name}></label>
+                      <a className="game_link" href={ 'http://localhost:5000/campaign/' + campaign.id}>
+                        {campaign.name}
+                        <span className="create_date">Created on: { campaign.created_time}</span>
+                      </a>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+    
+      <Footer />
       </React.Fragment>
     );
   }

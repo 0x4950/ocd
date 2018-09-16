@@ -25,4 +25,4 @@ def login():
     else:
       flash(u'Incorrent password.', 'incorrect_password')
 
-  return render_template('login_page.html')
+  return render_template('login.html')

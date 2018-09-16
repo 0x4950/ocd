@@ -48,7 +48,7 @@ def campaings():
     game_document = gamesCollection.find_one({'_id': ObjectId(game_id)})
     game_dict['name'] = game_document['name']
     game_dict['id'] = str(game_document['_id'])
-    game_dict['created_time'] = game_document['_id'].generation_time
+    game_dict['created_time'] = game_document['_id'].generation_time.strftime('%d %b %Y')
     games.append(game_dict)
 
   return jsonify(games)
