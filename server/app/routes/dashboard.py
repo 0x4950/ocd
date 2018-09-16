@@ -1,5 +1,6 @@
 from app import app, mongo
-from flask_login import login_required
+from bson import ObjectId
+from flask_login import login_required, current_user
 from flask import render_template, request, abort, jsonify
 
 usersCollection = mongo.db.users

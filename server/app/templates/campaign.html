@@ -48,15 +48,15 @@
                 <div id="links">
                     {% if game_id['status'] == "online" %}
                         {% if (players_character and (players_character['health_status'] != 'dead')) or (dm_username['username'] == current_user.id) %}
-                            <a class="btn" href="{{ url_for('session_page', game_id_url=game_id['_id']) }}">Join session</a>
+                            <a class="btn" href="{{ url_for('session', game_id_url=game_id['_id']) }}">Join session</a>
                         {% endif%}
                     {% endif %}
 
                     {% if dm_username['username'] == current_user.id %}
                         {% if game_id['status'] == "offline" %}
-                            <br><a class="btn" href="{{ url_for('session_page', game_id_url=game_id['_id']) }}">Start session</a>
+                            <br><a class="btn" href="{{ url_for('session', game_id_url=game_id['_id']) }}">Start session</a>
                         {% endif %}
-                        <br><a class="btn" href="{{ url_for('npc_creation', game_id_url=game_id['_id']) }}">Create NPCs</a>
+                        <br><a class="btn" href="{{ url_for('npcCreate', game_id_url=game_id['_id']) }}">Create NPCs</a>
                     {% elif players_character and (players_character['health_status'] != 'dead') %}
                         {% if players_character['level_up_ready'] %}
                         <br><a class="btn" href="{{ url_for('level_up', game_id_url=game_id['_id']) }}">Level up!</a>
@@ -65,8 +65,6 @@
                         <br><a class="btn" href="{{ url_for('prepared_spells', game_id_url=game_id['_id']) }}">Set prepared spells list</a>
                         {% endif %}
                         <br><a class="btn" href="{{ url_for('prepared_weapons', game_id_url=game_id['_id']) }}">Set prepared weapons</a>
-                    {% else %}
-                        <br><a class="btn" href="{{ url_for('character_creation_page', game_id_url=game_id['_id']) }}">Create a character</a>
                     {% endif %}
                 </div>
             </div>

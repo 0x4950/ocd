@@ -27,3 +27,4 @@ from app.routes import login
 from app.routes import createAccount
 from app.routes import dashboard
 from app.routes import logout
+from app.routes import campaign
