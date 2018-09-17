@@ -7,21 +7,17 @@ class App extends Component {
     this.state = {
       campaignsList: [],
       campaingName: '',
-      canCreate: true
+      canCreate: true,
+      loggedUser: ''
     };
   }
 
   componentDidMount() {
-    fetch('http://localhost:5000/api/campaings/')
-      .then(response => response.json())
-      .then(campaignsList => this.setState({ campaignsList}))
-      .catch(error => console.log('Error:', error));
+    this.getLoggedUser();
+    this.getCampaignsList();
   }
 
   render() {
-    this.state.campaignsList.map(campaign => {
-      console.log(typeof(campaign.created_time));
-      });
     return (
       <React.Fragment>
         
@@ -30,7 +26,7 @@ class App extends Component {
             <div className="col-sm-12">
 
               <div id="welcome_message">
-                <h3>Welcome, user</h3>
+                <h3>Welcome, {this.state.loggedUser}</h3>
               </div>
 
               <div id="games_list">
@@ -38,42 +34,63 @@ class App extends Component {
                   <h1>Campaigns</h1>
                 </div>
               
-              <div id="actual_list">
-                {this.state.campaignsList.map(campaign => {
-                  return (
-                    <div key={campaign.id} className="game_div">
-                      <label htmlFor={campaign.name}></label>
-                      <a className="game_link" href={ 'http://localhost:5000/campaign/' + campaign.id}>
-                        {campaign.name}
-                        <span className="create_date">Created on: { campaign.created_time}</span>
-                      </a>
-                    </div>
-                  )
-                })}
+                <div id="actual_list">
+                  {this.state.campaignsList.map(campaign => {
+                    return (
+                      <div key={campaign.id} className="game_div">
+                        <label htmlFor={campaign.name}></label>
+                        <a className="game_link" href={ 'http://localhost:5000/campaign/' + campaign.id}>
+                          {campaign.name}
+                          <span className="create_date">Created on: { campaign.created_time}</span>
+                        </a>
+                      </div>
+                    )
+                  })}
+                </div>
+                <input value={this.state.campaingName} onChange={this.handleNameChange} />
+                <button onClick={this.createNewCampaign}>Create new campaign</button>
+                <button onClick={this.logout}>Sign out</button>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    
-      <Footer />
+
+        <Footer />
       </React.Fragment>
     );
   }
 
+  getLoggedUser = () => {
+    fetch('http://localhost:5000/api/getLoggedUser/')
+    .then(response => response.json())
+    .then(response => this.setState({ loggedUser:response['loggedUser'] }))
+    .catch(error => console.log('Error: ', error));
+  };
+
+  getCampaignsList = () => {
+    fetch('http://localhost:5000/api/campaings/')
+    .then(response => response.json())
+    .then(campaignsList => this.setState({ campaignsList}))
+    .catch(error => console.log('Error: ', error));
+  };
+
   createNewCampaign = () => {
+    this.setState({ campaingName: '' })
+
     fetch('http://localhost:5000/api/campaings/', {
       method: 'POST',
       body: JSON.stringify({'name': this.state.campaingName}),
       headers: {
         'Content-Type': 'application/json'
     }})
-      .then(response => response.json())
-      .then(campaignsList => {
-        this.setState({ campaignsList});
-        this.setState({ canCreate: true});
-      })
-      .catch(error => this.setState({ canCreate: false }));
+    .then(response => response.json())
+    .then(campaignsList => {
+      this.setState({ campaignsList});
+      this.setState({ canCreate: true});
+    })
+    .catch(error => {
+      this.setState({ canCreate: false })
+    });
   };
 
   handleNameChange = e => {

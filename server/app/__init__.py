@@ -28,3 +28,7 @@ from app.routes import createAccount
 from app.routes import dashboard
 from app.routes import logout
 from app.routes import campaign
+
+# Import API routes.
+from app.api import getLoggedUser
+from app.api import getCampaigns
