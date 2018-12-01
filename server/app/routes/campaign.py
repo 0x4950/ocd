@@ -37,7 +37,7 @@ def game_page(campaign_id):
                     else:
                         player_dict['character'] = None
 
-                    if player_dict['username'] == flask_login.current_user.id:
+                    if player_dict['username'] == current_user.username:
                         players_character = player_dict['character']
 
                     players.append(player_dict)

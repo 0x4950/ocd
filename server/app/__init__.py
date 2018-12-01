@@ -3,6 +3,9 @@ from flask_pymongo import PyMongo
 from flask_assets import Bundle, Environment
 # from flask_socketio import SocketIO
 
+# Run with 'export FLASK_APP=react-ocd.py 
+#           export FLASK_ENV=development 
+#           flask run --host=0.0.0.0'.
 app = Flask(__name__)
 
 # Connect to the socket.
@@ -28,6 +31,9 @@ from app.routes import createAccount
 from app.routes import dashboard
 from app.routes import logout
 from app.routes import campaign
+from app.routes import session
+from app.routes import preparedWeapons
+from app.routes import combat
 
 # Import API routes.
 from app.api import getLoggedUser

@@ -145,7 +145,7 @@
                     var characters_selected = selected_characters();
                     console.log(characters_selected)
                     socket.emit("load_combat_characters", characters_selected);
-                    window.location.replace("{{ url_for('combat_page', game_id_url=game['_id']) }}");
+                    window.location.replace("{{ url_for('combat', game_id_url=game['_id']) }}");
                 });
 
                 $("#ability_check_type").trigger("change");
@@ -188,15 +188,15 @@
             socket.on('message', function(msg) {
                 var log = null;
                 console.log(msg);
-                
+
                 if (msg['type'] === 'exit_session') {
                     log = "Dungeon Master has terminated this session. You are being redirected to the game page";
-                    window.location.replace("{{ url_for('game_page', game_id_url=game['_id']) }}");
+                    window.location.replace("{{ url_for('game_page', campaign_id=game['_id']) }}");
                 }
                 else if (msg['type'] === 'enter_combat') {
                     for(var i=0; i<msg['combat_characters'].length; i++) {
                         if(msg['combat_characters'][i] === users_player) {
-                            window.location.replace("{{ url_for('combat_page', game_id_url=game['_id']) }}");
+                            window.location.replace("{{ url_for('combat', campaign_id=game['_id']) }}");
                         }
                     }
                     log = "Dungeon Master initiated a Combat with the following characters participating " + msg['combat_characters'];
@@ -438,7 +438,7 @@
 
             <div class="row last-row">
                 <div class="col-sm-6">
-                    <a class="btn" href="{{ url_for('exit_session', game_id_url=game['_id']) }}">Exit Session</a>
+                    <a class="btn" href="{{ url_for('exit_session', campaign_id=game['_id']) }}">Exit Session</a>
                     <input class="btn" type="button" value="Start Combat!" id="start_combat">
                 </div>
                 <div class="col-sm-6 right-floater">

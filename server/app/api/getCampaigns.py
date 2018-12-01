@@ -6,7 +6,7 @@ from bson import ObjectId
 usersCollection = mongo.db.users
 gamesCollection = mongo.db.games
 
-@app.route('/api/campaings/', methods=['GET', 'POST'])
+@app.route('/api/campaigns/', methods=['GET', 'POST'])
 @login_required
 def campaings():
   if request.method == "POST":

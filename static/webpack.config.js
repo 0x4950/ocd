@@ -1,3 +1,5 @@
+// Run with 'npm run dev'.
+
 const webpack = require('webpack');
 const path = require("path");
 

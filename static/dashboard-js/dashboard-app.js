@@ -39,7 +39,7 @@ class App extends Component {
                     return (
                       <div key={campaign.id} className="game_div">
                         <label htmlFor={campaign.name}></label>
-                        <a className="game_link" href={ 'http://localhost:5000/campaign/' + campaign.id}>
+                        <a className="game_link" href={ 'http://127.0.0.1:5000/campaign/' + campaign.id}>
                           {campaign.name}
                           <span className="create_date">Created on: { campaign.created_time}</span>
                         </a>
@@ -61,14 +61,14 @@ class App extends Component {
   }
 
   getLoggedUser = () => {
-    fetch('http://localhost:5000/api/getLoggedUser/')
+    fetch('http://127.0.0.1:5000/api/getLoggedUser/')
     .then(response => response.json())
     .then(response => this.setState({ loggedUser:response['loggedUser'] }))
     .catch(error => console.log('Error: ', error));
   };
 
   getCampaignsList = () => {
-    fetch('http://localhost:5000/api/campaings/')
+    fetch('http://127.0.0.1:5000/api/campaigns/')
     .then(response => response.json())
     .then(campaignsList => this.setState({ campaignsList}))
     .catch(error => console.log('Error: ', error));
@@ -77,7 +77,7 @@ class App extends Component {
   createNewCampaign = () => {
     this.setState({ campaingName: '' })
 
-    fetch('http://localhost:5000/api/campaings/', {
+    fetch('http://127.0.0.1:5000/api/campaigns/', {
       method: 'POST',
       body: JSON.stringify({'name': this.state.campaingName}),
       headers: {
@@ -98,7 +98,7 @@ class App extends Component {
   };
 
   logout = () => {
-    window.location.replace("http://localhost:5000/logout/");
+    window.location.replace("http://127.0.0.1:5000/logout/");
   };
 }
 

@@ -1,6 +1,16 @@
-@app.route('/game/<game_id_url>/session/combat_page')
-@flask_login.login_required
-def combat_page(game_id_url):
+from bson import ObjectId
+from app import app, mongo
+from app.belonger import belonger
+from flask_login import login_required, current_user
+from flask import flash, redirect,render_template, url_for
+
+gamesCollection = mongo.db.games
+usersCollection = mongo.db.users
+charactersCollection = mongo.db.characters
+
+@app.route('/campaign/<campaign_id>/session/combat/')
+@login_required
+def combat(campaign_id):
     game = None
     user_is_dm = False
     users_player = None
@@ -12,17 +22,17 @@ def combat_page(game_id_url):
     my_character_spells = []
 
     # If the document id is valid
-    if ObjectId.is_valid(game_id_url):
+    if ObjectId.is_valid(campaign_id):
         # Retrieve game document from the database
-        game = gamesCollection.find_one({'_id': ObjectId(game_id_url)})
+        game = gamesCollection.find_one({'_id': ObjectId(campaign_id)})
 
     # If the game is found in the database.
     if game:
         # Check if player participates in this game
-        if belonger(game_id_url):
+        if belonger(campaign_id):
             # Retrieve the name of the DM from database
             game_dm_name = usersCollection.find_one({'_id': ObjectId(game['dm_id'])}, {'username': 1})['username']
-            if game_dm_name == flask_login.current_user.id:
+            if game_dm_name == current_user.username:
                 # Let the template know if user is the DM.
                 user_is_dm = True
 
@@ -34,7 +44,7 @@ def combat_page(game_id_url):
                 for character in combat_session['character_documents']:
                     character.pop('_id', None)
                     if character['type'] == 'player_character':
-                        if character['player_name'] == flask_login.current_user.id:
+                        if character['player_name'] == current_user.username:
                             my_character = character
 
                 # If this is not the DM, but a player with an existing character.
@@ -86,9 +96,9 @@ def combat_page(game_id_url):
 
                 # Set session variable for game id.
                 if user_is_dm or character_participating_in_combat:
-                    session['game_id'] = game_id_url
+                    session['game_id'] = campaign_id
 
-                    return render_template('combat_page.html', game_id_url=game_id_url, user_is_dm=user_is_dm,
+                    return render_template('combat.html', campaign_id=campaign_id, user_is_dm=user_is_dm,
                                         users_player=users_player,
                                         character_initiated_position=character_initiated_position,
                                         currently_playing_character=currently_playing_character,
@@ -100,7 +110,7 @@ def combat_page(game_id_url):
                                         game=game, my_character_spells=my_character_spells)
             else:
                 flash("Session is not in combat.")
-                return redirect(url_for('session_page', game_id_url=game_id_url))
+                return redirect(url_for('session_page', campaign_id=campaign_id))
         else:
             flash("You do not participate in this game.")
     else:

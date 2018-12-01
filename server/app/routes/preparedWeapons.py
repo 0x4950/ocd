@@ -1,5 +1,13 @@
+from app import app, mongo
+from app.prepareWeapons import PrepareWeaponException, set_prepared_weapons
+from app.belonger import belonger
+from flask_login import login_required, current_user
+from flask import flash, request, redirect,render_template, url_for
+
+charactersCollection = mongo.db.characters
+
 @app.route('/game/<game_id_url>/prepared_weapons', methods=['GET', 'POST'])
-@flask_login.login_required
+@login_required
 def prepared_weapons(game_id_url):
     character_document = None
     selected_weapons = list()
@@ -9,9 +17,9 @@ def prepared_weapons(game_id_url):
     if belonger(game_id_url):
 
         # Retrive character document from the database.
-        character_document = characters_collection.find_one(
+        character_document = charactersCollection.find_one(
             {'game_id': game_id_url,
-             'player_name': flask_login.current_user.id})
+             'player_name': current_user.username})
 
         if request.method == 'POST':
             request_weapons = dict(request.form)
@@ -22,20 +30,20 @@ def prepared_weapons(game_id_url):
 
             try:
                 # Call function to set the prepared weapons.
-                result = attacks.set_prepared_weapons(character_document, selected_weapons)
+                result = set_prepared_weapons(character_document, selected_weapons)
 
                 # Update the database.
-                characters_collection.update_one(
+                charactersCollection.update_one(
                     {'game_id': game_id_url, 'name': character_document['name']},
                     {'$set': {'equipped': list(result)}})
 
-                return redirect(url_for('game_page', game_id_url=game_id_url))
-            except attacks.PrepareWeaponException as e:
+                return redirect(url_for('game_page', campaign_id=game_id_url))
+            except PrepareWeaponException as e:
                 error = e.args[0]
                 flash(error)
 
-        return render_template('prepared_weapons.html', game_id_url=game_id_url,
-                               character=character_document, spells=spells, error=error)
+        return render_template('weaponsPrepared.html', game_id_url=game_id_url,
+                               character=character_document, error=error)
     else:
         flash("You do not participate in this game.")
 

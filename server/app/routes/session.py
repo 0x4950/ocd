@@ -1,5 +1,16 @@
+from bson import ObjectId
+from app import app, mongo
+from app.belonger import belonger
+from flask_login import login_required, current_user
+from flask import flash, session, redirect,render_template, url_for
+
+gamesCollection = mongo.db.games
+usersCollection = mongo.db.users
+charactersCollection = mongo.db.characters
+npcsCollection = mongo.db.npcsCollection
+
 @app.route('/game/<game_id_url>/session/')
-@flask_login.login_required
+@login_required
 def session_page(game_id_url):
     npcs = []
     dm_username = False
@@ -16,7 +27,7 @@ def session_page(game_id_url):
             game_dm_name = usersCollection.find_one(
                 {'_id': game['dm_id']}, {'username': 1})['username']
 
-            if game_dm_name == flask_login.current_user.id:
+            if game_dm_name == current_user.username:
                 dm_username = True
                 # Set the field 'status' to online, so players can join the game.
                 gamesCollection.update_one({'_id': game['_id']}, {"$set": {"status": 'online'}})
@@ -25,12 +36,12 @@ def session_page(game_id_url):
                 for player in game['players']:  # For each player retrieve characters
                     if player['character']:
                         # Get character from characters collection
-                        char = characters_collection.find_one({'_id': player['character']})
+                        char = charactersCollection.find_one({'_id': player['character']})
 
                         # Check if the character exists.
                         if char:
                             # If character belongs to logged user inform the template
-                            if char['player_name'] == flask_login.current_user.id:
+                            if char['player_name'] == current_user.username:
                                 users_player = char['name']
                                 session['users_player'] = char['name']
 
@@ -46,11 +57,11 @@ def session_page(game_id_url):
                 # Save variables to session.
                 session['game_id'] = game_id_url
 
-                return render_template('session_page.html', game=game, dm_username=dm_username, characters=characters,
+                return render_template('session.html', game=game, dm_username=dm_username, characters=characters,
                                        npcs=npcs, users_player=users_player)
             else:
                 flash(u'This session is offline.')
-                return redirect(url_for('game_page', game_id_url=game_id_url))
+                return redirect(url_for('game_page', campaign_id=game_id_url))
         flash(u'You do not participate in this game.')
         return redirect(url_for('dashboard'))
     flash(u'This game does not exist.')
