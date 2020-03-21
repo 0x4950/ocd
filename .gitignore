@@ -13,3 +13,6 @@
 # Flask assets cache.
 **/.webassets-cache
 server/app/static/dist/*
+
+# Flask configuration 
+config.py
