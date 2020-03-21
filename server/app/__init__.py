@@ -8,6 +8,8 @@ from flask_assets import Bundle, Environment
 #           flask run --host=0.0.0.0'.
 app = Flask(__name__)
 
+app.config.from_object('config.DevelopmentConfig')
+
 # Connect to the socket.
 # socketio = SocketIO(app)
 
@@ -19,10 +21,7 @@ bundles = {
 assets = Environment(app)
 assets.register(bundles)
 
-app.config["SECRET_KEY"] = 'dev-secret'
-
 # Connect to the database.
-app.config["MONGO_URI"] = 'mongodb://heroku_t67kkwpk:ucevqbvtnnv7lr2bl0sc33ov6d@ds011664.mlab.com:11664/heroku_t67kkwpk'
 mongo = PyMongo(app)
 
 # Import routes.

@@ -1,7 +1,6 @@
 FROM python:alpine
 
 ENV FLASK_APP react-ocd.py
-ENV FLASK_ENV development
 
 COPY server/ /back-end/
 
