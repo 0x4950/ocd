@@ -1,0 +1,120 @@
+{
+    "name": "padded",
+    "armor_type" : "light_armor",
+    "cost": 5,
+    "armor_class" : 11,
+    "dex_mod_cap": 0,
+    "str_requirement": 0,
+    "stealth_disadvantage": true,
+    "weight": 8
+}
+{
+    "name": "leather",
+    "armor_type": "light_armor",
+    "cost": 10,
+    "armor_class" : 11,
+    "dex_mod_cap": 0,
+    "str_requirement": 0,
+    "stealth_disadvantage": false,
+    "weight": 10
+}
+{
+    "name": "strudded_leather",
+    "armor_type": "light_armor",
+    "cost": 45,
+    "armor_class" : 12,
+    "dex_mod_cap": 0,
+    "str_requirement": 0,
+    "stealth_disadvantage": false,
+    "weight": 13
+}
+{
+    "name": "hide",
+    "armor_type": "medium_armor",
+    "cost": 10,
+    "armor_class" : 12,
+    "dex_mod_cap": 2,
+    "str_requirement": 0,
+    "stealth_disadvantage": false,
+    "weight": 12
+}
+{
+    "name": "chain_shirt",
+    "armor_type": "medium_armor",
+    "cost": 50,
+    "armor_class" : 13,
+    "dex_mod_cap": 2,
+    "str_requirement": 0,
+    "stealth_disadvantage": false,
+    "weight": 20
+}
+{
+    "name": "scale_mail",
+    "armor_type": "medium_armor",
+    "cost": 50,
+    "armor_class" : 14,
+    "dex_mod_cap": 2,
+    "str_requirement": 0,
+    "stealth_disadvantage": true,
+    "weight": 45
+}
+{
+    "name": "breastplate",
+    "armor_type": "medium_armor",
+    "cost": 400,
+    "armor_class" : 14,
+    "dex_mod_cap": 2,
+    "str_requirement": 0,
+    "stealth_disadvantage": false,
+    "weight": 20
+}
+{
+    "name": "half_plate",
+    "armor_type": "medium_armor",
+    "cost": 750,
+    "armor_class" : 15,
+    "dex_mod_cap": 2,
+    "str_requirement": 0,
+    "stealth_disadvantage": true,
+    "weight": 40
+}
+{
+    "name": "ring_mail",
+    "armor_type": "heavy_armor",
+    "cost": 30,
+    "armor_class" : 14,
+    "dex_mod_cap": 0,
+    "str_requirement": 0,
+    "stealth_disadvantage": true,
+    "weight": 40
+}
+{
+    "name": "chain_mail",
+    "armor_type": "heavy_armor",
+    "cost": 75,
+    "armor_class" : 16,
+    "dex_mod_cap": 0,
+    "str_requirement": 13,
+    "stealth_disadvantage": true,
+    "weight": 55
+}
+{
+    "name": "splint",
+    "armor_type": "heavy_armor",
+    "cost": 200,
+    "armor_class" : 17,
+    "dex_mod_cap": 0,
+    "str_requirement": 15,
+    "stealth_disadvantage": true,
+    "weight": 60
+}
+{
+    "name":"plate",
+    "armor_type": "heavy_armor",
+    "cost": 1500,
+    "armor_class" : 18,
+    "dex_mod_cap": 0,
+    "str_requirement": 15,
+    "stealth_disadvantage": true,
+    "weight": 65
+}

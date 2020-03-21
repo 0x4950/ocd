@@ -1,0 +1,31 @@
+{
+	"name": "explorer_pack",
+	"gold_pieces": 10,
+	"torches": 10,
+	"rations": 10,
+	"hempen_rope": 50,
+	"rest_equipment": [ "backpack", "bedroll", "mess_kit", "tinderbox", "waterskin"]
+}
+{
+	"name": "priest_pack",
+	"gold_pieces": 19,
+	"torches": 10,
+	"rations": 10,
+	"hempen_rope": 50,
+	"rest_equipment": ["backpack", "blanket", "tinderbox", "alms_box", "censer", "vestments", "waterskin"]
+}
+{
+	"name": "dungeoneer_pack",
+	"gold_pieces": 12,
+	"pitions": 10,
+	"torches": 10,
+	"rations": 10,
+	"hempen_rope": 50,
+	"rest_equipment": ["backpack", "crowbar", "hammer", "tinderbox", "waterskin"]
+}
+{
+	"name": "scholar_pack",
+	"gold_pieces": 40,
+	"parchment_sheets": 10,
+	"rest_equipment": ["backpack", "lore_book", "ink_bottle", "ink_pen", "little_sand_bag", "small_knife"]
+}

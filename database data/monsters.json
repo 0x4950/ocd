@@ -1,0 +1,69 @@
+{
+    "name": "Imp",
+    "size": "tiny",
+    "type": "fiend",
+    "alignment": "LE",
+    "ability_scores": {
+      "strength": 6,
+      "dexterity": 17,
+      "constitution": 13,
+      "intelligence": 11,
+      "wisdom": 12,
+      "charisma": 14
+    },
+    "challenge": 1,
+    "exp": 200,
+    "armor_class": 13,
+    "hit_points": 10,
+    "proficiency_bonus": 2,
+    "speed": {
+      "walk": 20,
+      "fly": 40
+    },
+    "skills": {
+      "deception": 4,
+      "insight": 3,
+      "persuasion": 4,
+      "stealth": 5
+    },
+    "damage_resistances": [
+      "cold"
+    ],
+    "damage_immunities": [
+      "fire",
+      "poison"
+    ],
+    "condition_immunities": [
+      "poisoned"
+    ],
+    "senses": {
+      "darkvision": 120,
+      "passive_perception": 11
+    },
+    "languages": [
+      "common",
+      "infernal"
+    ],
+    "special_traits": [
+      "shapechanger",
+      "devils_sight",
+      "magic_resistance"
+    ],
+    "actions": {
+      "attack_type": "melee",
+      "attack_hit": 5,
+      "reach": 5
+    }
+}
+{
+    "name": "Sprite"
+}
+{
+    "name": "Giant Rat"
+}
+{
+    "name": "Goblin"
+}
+{
+    "name": "Orc"
+}
